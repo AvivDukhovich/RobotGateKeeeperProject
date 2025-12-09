@@ -2,7 +2,7 @@ import socket
 import threading
 import random
 
-HOST = "localhost"
+HOST = "192.168.9.239"
 PORT = 8080
 
 random_num = random.randint(1, 1000)

@@ -1,7 +1,7 @@
 import socket
 import threading
 
-HOST = "localhost"
+HOST = "192.168.9.239"
 PORT = 8080
 
 def receive_messages(sock):
