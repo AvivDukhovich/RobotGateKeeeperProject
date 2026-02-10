@@ -1,2 +1,41 @@
 Aegis-FTC Security Log Initialized
 [2026-02-03 10:59:30] Successfully connected to REV Control Hub.
+[2026-02-10 10:37:04] Successfully connected to REV Control Hub
+[2026-02-10 10:37:04] Detected device on network: fe80::c06:ed2:1c12:d0a6
+[2026-02-10 10:37:04] Detected device on network: fe80::a4a9:1229:6884:8124
+[2026-02-10 10:37:04] Detected device on network: 192.168.43.58
+[2026-02-10 10:37:04] Detected device on network: 192.168.43.88
+[2026-02-10 11:06:23] Successfully connected to REV Control Hub
+[2026-02-10 11:06:23] Detected device on network: fe80::c06:ed2:1c12:d0a6
+[2026-02-10 11:06:23] Detected device on network: fe80::a4a9:1229:6884:8124
+[2026-02-10 11:06:23] Detected device on network: 192.168.43.88
+[2026-02-10 11:10:15] Successfully connected to REV Control Hub
+[2026-02-10 11:10:16] Detected device on network: fe80::a4a9:1229:6884:8124
+[2026-02-10 11:10:30] Successfully connected to REV Control Hub
+[2026-02-10 11:10:30] Starting continuous network monitoring...
+[2026-02-10 11:10:30] New device connected: fe80::a4a9:1229:6884:8124
+[2026-02-10 11:10:30] New device connected: 192.168.43.88
+[2026-02-10 11:11:32] New device connected: fe80::d4f0:f9ff:fe6e:8433
+[2026-02-10 11:11:37] New device connected: 192.168.43.58
+[2026-02-10 11:11:42] New device connected: fe80::c06:ed2:1c12:d0a6
+[2026-02-10 11:11:42] New device connected: 192.168.43.47
+[2026-02-10 11:16:03] FAILED to connect to REV Control Hub
+[2026-02-10 11:16:06] Successfully connected to REV Control Hub
+[2026-02-10 11:16:06] Starting continuous network monitoring...
+[2026-02-10 11:37:06] Successfully connected to REV Control Hub
+[2026-02-10 11:37:06] Starting continuous network monitoring...
+[2026-02-10 11:41:25] New device connected: 192.168.43.88
+[2026-02-10 11:41:25] New device connected: 192.168.43.58
+[2026-02-10 11:41:25] New device connected: 192.168.43.47
+[2026-02-10 11:42:03] Successfully connected to REV Control Hub
+[2026-02-10 11:42:03] Starting continuous network monitoring...
+[2026-02-10 11:46:10] Successfully connected to REV Control Hub
+[2026-02-10 11:46:10] Starting continuous network monitoring...
+[2026-02-10 11:47:30] Successfully connected to REV Control Hub
+[2026-02-10 11:47:30] Starting continuous network monitoring...
+[2026-02-10 11:47:30] New device connected: 192.168.43.88
+[2026-02-10 11:47:30] New device connected: 192.168.43.47
+[2026-02-10 11:54:21] Successfully connected to REV Control Hub
+[2026-02-10 11:54:21] Starting continuous network monitoring...
+[2026-02-10 11:54:21] New device connected: 192.168.43.88
+[2026-02-10 11:54:21] New device connected: 192.168.43.47
