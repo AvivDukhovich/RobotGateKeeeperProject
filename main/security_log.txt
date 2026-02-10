@@ -39,3 +39,7 @@ Aegis-FTC Security Log Initialized
 [2026-02-10 11:54:21] Starting continuous network monitoring...
 [2026-02-10 11:54:21] New device connected: 192.168.43.88
 [2026-02-10 11:54:21] New device connected: 192.168.43.47
+[2026-02-10 12:13:46] Successfully connected to REV Control Hub
+[2026-02-10 12:13:46] Starting continuous network monitoring...
+[2026-02-10 12:13:46] 🚨 WARNING! UNKNOWN DEVICE DETECTED: 192.168.43.88
+[2026-02-10 12:14:22] 🚨 WARNING! UNKNOWN DEVICE DETECTED: 192.168.43.47
