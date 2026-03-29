@@ -1,0 +1,74 @@
+Aegis-FTC Security Log Initialized
+[2026-03-29 09:15:07] FAILED to connect to REV Control Hub
+[2026-03-29 09:16:01] Successfully connected to REV Control Hub
+[2026-03-29 09:16:01] Starting continuous network monitoring...
+[2026-03-29 09:16:01] 🚨 WARNING! UNKNOWN DEVICE DETECTED: 192.168.43.104
+[2026-03-29 09:22:33] Successfully connected to REV Control Hub
+[2026-03-29 09:22:33] Starting continuous network monitoring...
+[2026-03-29 09:22:33] 🚨 WARNING! UNKNOWN DEVICE DETECTED: 192.168.43.104
+[2026-03-29 09:22:53] Stop command recieved. Shutting down...
+[2026-03-29 09:27:21] Successfully connected to REV Control Hub
+[2026-03-29 09:27:21] Starting continuous network monitoring...
+[2026-03-29 09:27:21] 🚨 WARNING! UNKNOWN DEVICE DETECTED: 192.168.43.47
+[2026-03-29 09:27:21] 🚨 WARNING! UNKNOWN DEVICE DETECTED: 192.168.43.104
+[2026-03-29 09:27:47] Stop command recieved. Shutting down...
+[2026-03-29 10:39:01] FAILED to connect to REV Control Hub
+[2026-03-29 10:39:45] FAILED to connect to REV Control Hub
+[2026-03-29 10:40:16] FAILED to connect to REV Control Hub
+[2026-03-29 10:57:23] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 10:57:24] AUTHORIZED: 192.168.43.104
+[2026-03-29 10:58:09] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:00:09] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:00:09] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:00:09] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:00:40] Shutdown initiated...
+[2026-03-29 11:06:59] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:06:59] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:06:59] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:08:31] Shutdown initiated...
+[2026-03-29 11:10:42] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:10:42] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:10:42] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:11:12] Shutdown initiated during wait...
+[2026-03-29 11:11:22] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:11:22] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:11:22] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:11:26] Shutdown initiated during wait...
+[2026-03-29 11:15:48] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:15:48] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:15:48] [STALE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:16:22] Shutdown initiated during wait...
+[2026-03-29 11:16:31] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:16:31] [STALE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:16:31] [STALE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:16:36] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:16:36] Shutdown initiated during wait...
+[2026-03-29 11:18:00] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:18:00] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:18:00] [STALE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:18:21] Shutdown initiated during wait...
+[2026-03-29 11:23:01] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:23:01] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:23:02] [STALE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:23:37] Shutdown initiated during wait...
+[2026-03-29 11:25:49] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:25:49] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:25:49] [STALE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:26:02] Shutdown initiated during wait...
+[2026-03-29 11:28:25] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:28:26] [STALE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:28:26] [STALE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:28:31] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:32:41] Shutdown initiated during wait...
+[2026-03-29 11:41:34] FAILED to connect to REV Control Hub
+[2026-03-29 11:42:15] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:42:15] [STALE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:42:22] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:42:45] Shutdown initiated during wait...
+[2026-03-29 11:43:22] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:43:23] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:43:40] Successfully connected. Monitoring Active. Press 'S' to stop.
+[2026-03-29 11:43:40] [ACTIVE] AUTHORIZED: 192.168.43.104
+[2026-03-29 11:44:01] [STALE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:44:07] [ACTIVE] UNAUTHORIZED: 192.168.43.47
+[2026-03-29 11:47:28] Shutdown initiated during wait...
