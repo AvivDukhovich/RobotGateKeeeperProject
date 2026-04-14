@@ -13,7 +13,7 @@ import tkinter as tk
 from secure_socket import SecureSocket
 
 
-class SecurityGUI:
+class IdsGUI:
     def __init__(self, root):
         """
         Initializes the GUI window, styling, and background server thread.
@@ -127,7 +127,7 @@ class SecurityGUI:
 # --- Application Entry Point ---
 if __name__ == "__main__":
     root = tk.Tk()
-    app = SecurityGUI(root)
+    app = IdsGUI(root)
 
     # MainLoop keeps the window open and processes the .after() queue
     root.mainloop()
