@@ -13,7 +13,7 @@ from log_manager import LogManager
 from network_monitor import NetworkMonitor
 from database_manager import DatabaseManager
 from secure_socket import SecureSocket
-from config import LOG_FILE, SECRET_KEY, SERVER_PORT, HUB_IP
+from config import LOG_FILE, SECRET_KEY, SERVER_PORT, HUB_IP, COMMAND_CENTER_IP, ROBOT_ID
 from notification_manager import NotificationManager
 
 # Devices allowed on the Robot Network (Admin Laptop and the Hub itself)
@@ -22,26 +22,26 @@ ALLOWED_IPS = {"192.168.43.104", HUB_IP}
 
 def send_alert_to_gui(message):
     """
-    Encrypts and transmits security alerts to the local GUI dashboard.
-
-    Args:
-        message (str): The plaintext alert message to be encrypted and sent.
+    Encrypts and transmits security alerts to the remote Command Center.
     """
+
     try:
-        # Initialize SecureSocket with the shared SECRET_KEY for AES encryption
+        # 1. Prefix the message with the ID: "SENSOR_NAME | ACTUAL_MESSAGE"
+        tagged_message = f"{ROBOT_ID} | {message}"
+
         sec = SecureSocket(key=SECRET_KEY)
-        encrypted = sec.encrypt_message(message)
+        encrypted = sec.encrypt_message(tagged_message)
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            # Prevent the script from hanging if the GUI is unresponsive
             s.settimeout(2)
-            s.connect(('127.0.0.1', SERVER_PORT))
+            # 2. Connect to the Command Center IP instead of 127.0.0.1
+            s.connect((COMMAND_CENTER_IP, SERVER_PORT))
             s.sendall(encrypted)
+
     except (ConnectionRefusedError, socket.timeout):
-        # GUI server is likely not running; ignore to keep the monitor active
         pass
     except Exception as e:
-        print(f"Error communicating with GUI: {e}")
+        print(f"Error communicating with Command Center: {e}")
 
 
 def main():
@@ -93,7 +93,7 @@ def main():
                 # 3. Defensive Response Actions
                 if auth_status == "UNAUTHORIZED":
                     # Windows Desktop Notification
-                    notifier.send_alert(alert_msg)
+                    notifier.send_alert(alert_msg, PC_ID)
 
                 logger.log(alert_msg)              # Write to text log
                 # Update SQL/Database

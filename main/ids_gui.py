@@ -11,6 +11,7 @@ import threading
 import time
 import tkinter as tk
 from secure_socket import SecureSocket
+from config import SECRET_KEY, SERVER_PORT
 
 
 class IdsGUI:
@@ -89,7 +90,6 @@ class IdsGUI:
         Hosts the local IPC (Inter-Process Communication) server.
         Listens for, decrypts, and routes incoming security alerts to the UI.
         """
-        from config import SECRET_KEY, SERVER_PORT
 
         # Initialize the same encryption engine used by the monitor
         sec = SecureSocket(key=SECRET_KEY)
@@ -99,12 +99,12 @@ class IdsGUI:
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         try:
-            # Bind only to Localhost (127.0.0.1) for security
-            server.bind(('127.0.0.1', SERVER_PORT))
+            # Bind to '0.0.0.0' to accept alerts from other laptops on the network
+            server.bind(('0.0.0.0', SERVER_PORT))
             server.listen(5)
-            print(f"[*] GUI Dashboard Active on port {SERVER_PORT}")
+            print(f"[*] Command Center Active. Listening for remote sensors...")
         except Exception as e:
-            print(f"Critical Bind Error: {e}")
+            print(f"Bind Error: {e}")
             return
 
         while True:

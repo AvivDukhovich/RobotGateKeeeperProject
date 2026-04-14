@@ -18,35 +18,30 @@ class NotificationManager:
         """
         self.url = f"https://ntfy.sh/{topic_name}"
 
-    def send_alert(self, ip_address):
+    def send_alert(self, ip_address, source_name="Robot-01"):
         """
-        Transmits a high-priority push notification via a POST request to ntfy.sh.
-        Includes custom headers for priority, titling, and visual tagging.
-
-        Args:
-            ip_address (str): The unauthorized IP address that triggered the alert.
+        Transmits a high-priority push notification.
+        Added 'source_name' to identify which sensor reported the threat.
         """
         try:
-            # Formulate the alert message with clear urgency
-            message = f"SECURITY ALERT: Unauthorized device {ip_address} detected on the Robot Network!"
+            # Better messaging for a distributed system
+            message = f"[{source_name}] ALERT: Unauthorized device {ip_address} detected!"
 
-            # Execute the HTTP POST request to the ntfy webhook
             response = requests.post(
                 self.url,
-                data=message.encode('utf-8'),  # Ensure UTF-8 for emoji support
+                data=message.encode('utf-8'),
                 headers={
-                    "Title": "Robot Gatekeeper Alert",
-                    "Priority": "high",           # Triggers override on some mobile Do Not Disturb settings
-                    "Tags": "warning,robot"       # Adds visual icons to the notification
+                    "Title": "Robot Gatekeeper: Intrusion Detected",
+                    "Priority": "high",
+                    "Tags": "warning,shield,robot"
                 }
             )
 
-            # Verify successful transmission
             if response.status_code == 200:
-                print(f"[NOTIFY] Alert sent to phone for {ip_address}")
+                print(f"[NOTIFY] Alert successfully pushed for {source_name}")
             else:
-                print(f"[NOTIFY] Failed to send: {response.status_code}")
+                print(
+                    f"[NOTIFY] ntfy.sh returned error: {response.status_code}")
 
         except Exception as e:
-            # Catch network/connection issues to prevent the main monitor from crashing
-            print(f"[NOTIFY] Connection Error: {e}")
+            print(f"[NOTIFY] Remote Alerting Failed: {e}")
