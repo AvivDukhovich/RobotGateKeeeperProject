@@ -49,25 +49,24 @@ class IdsGUI:
         # Start the listener thread so the UI remains responsive while waiting for data
         self.start_network_thread()
 
-    def update_status(self, text):
+    def update_status(self, robot_id, text): # <--- Added robot_id here
         """
         Thread-safe method to update the text display with new alerts.
-
-        Args:
-            text (str): The decrypted message received from the monitor service.
+        Now accepts robot_id to match the server's process_message call.
         """
-        self.monitor_log.config(
-            state='normal')  # Temporarily enable for writing
+        self.monitor_log.config(state='normal')  # Temporarily enable for writing
+        
         timestamp = time.strftime('%H:%M:%S')
-        full_message = f"[{timestamp}] {text}\n"
+        # Combined robot_id and text for the display
+        full_message = f"[{timestamp}] {robot_id}: {text}\n"
 
         # Logical Tagging: Assign colors based on message content
         tag = None
         if "UNAUTHORIZED" in text:
             tag = "UNAUTH"
-        elif "[ACTIVE]" in text:
+        elif "CONNECTED" in text or "ACTIVE" in text: # Added CONNECTED check
             tag = "ACTIVE"
-        elif "[STALE]" in text:
+        elif "STALE" in text or "DISCONNECTED" in text: # Added DISCONNECTED check
             tag = "STALE"
 
         # Insert at the end of the log and auto-scroll

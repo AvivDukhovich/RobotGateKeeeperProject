@@ -17,31 +17,19 @@ class NotificationManager:
             topic_name (str): The unique ntfy.sh channel name for the alerts.
         """
         self.url = f"https://ntfy.sh/{topic_name}"
+        self.topic = topic_name  # You can customize this as needed
 
-    def send_alert(self, ip_address, source_name="Robot-01"):
-        """
-        Transmits a high-priority push notification.
-        Added 'source_name' to identify which sensor reported the threat.
-        """
+    def send_alert(self, title, message):
         try:
-            # Better messaging for a distributed system
-            message = f"[{source_name}] ALERT: Unauthorized device {ip_address} detected!"
-
-            response = requests.post(
-                self.url,
+            requests.post(f"https://ntfy.sh/{self.topic}",
                 data=message.encode('utf-8'),
                 headers={
-                    "Title": "Robot Gatekeeper: Intrusion Detected",
-                    "Priority": "high",
-                    "Tags": "warning,shield,robot"
-                }
+                    "Title": title,
+                    "Priority": "urgent",
+                    "Tags": "warning,rotating_light"
+                },
+                timeout=5
             )
-
-            if response.status_code == 200:
-                print(f"[NOTIFY] Alert successfully pushed for {source_name}")
-            else:
-                print(
-                    f"[NOTIFY] ntfy.sh returned error: {response.status_code}")
-
+            print(f"[NOTIFY] Alert pushed to phone for {title}")
         except Exception as e:
-            print(f"[NOTIFY] Remote Alerting Failed: {e}")
+            print(f"[ERROR] ntfy push failed: {e}")

@@ -1,77 +1,49 @@
-"""
-NetworkMonitor - REV Control Hub Interface
-This module handles communication with the REV Control Hub via Android Debug Bridge (ADB).
-It provides methods to establish connections and query the ARP table for active network neighbors.
-"""
-
 import subprocess
 from config import ADB_PATH, HUB_IP, ADB_PORT
 
-
 class NetworkMonitor:
-    def __init__(self):
-        """
-        Initializes the monitor with the target Hub address.
-        """
+    def __init__(self, mode="usb"):
+        self.mode = mode
         self.hub_address = f"{HUB_IP}:{ADB_PORT}"
 
     def _run_adb(self, args):
-        """
-        Internal helper to execute ADB commands using subprocess.
-
-        Args:
-            args (list): List of command arguments to pass to ADB.
-
-        Returns:
-            CompletedProcess: The result of the command execution.
-        """
+        cmd = [ADB_PATH]
+        if self.mode == "wifi":
+            cmd += ["-s", self.hub_address]
+        
         try:
-            return subprocess.run(
-                [ADB_PATH] + args,
-                capture_output=True,
-                text=True,
-                timeout=5  # Short timeout to keep the UI responsive
-            )
+            return subprocess.run(cmd + args, capture_output=True, text=True, timeout=5)
         except subprocess.TimeoutExpired:
-            print(f"ADB command timed out! Failed on: {args}")
             return subprocess.CompletedProcess(args, 1, "", "Timeout")
 
     def connect_to_hub(self):
-        """
-        Establishes a TCP/IP connection to the REV Control Hub over the network.
-
-        Returns:
-            bool: True if connection is successful, False otherwise.
-        """
-        print(f"Connecting to REV Control Hub at {self.hub_address}...")
-        result = self._run_adb(["connect", self.hub_address])
-        print(result.stdout.strip())
-        # Connection is successful if 'already connected' or 'connected to' is in stdout
-        return "connected" in result.stdout.lower()
+        if self.mode == "wifi":
+            result = self._run_adb(["connect", self.hub_address])
+            return "connected" in result.stdout.lower()
+        else:
+            # USB Mode: Just check if 'device' appears in the list
+            result = self._run_adb(["devices"])
+            lines = result.stdout.strip().splitlines()
+            return any("device" in l and "List" not in l for l in lines)
 
     def get_connected_devices(self):
-        """
-        Queries the Hub's neighbor table (ARP cache) for active devices.
-        Uses NUD (Neighbor Unreachability Detection) to filter out disconnected devices.
-
-        Returns:
-            list: A list of tuples containing (ip_address, status).
-        """
-        # 'nud reachable' tells the kernel to only return devices confirmed to be active
-        result = self._run_adb(
-            ["-s", self.hub_address, "shell", "ip", "neighbor", "show", "nud", "reachable"])
+        # 1. Force a discovery ping to the broadcast address
+        self._run_adb(["shell", "ping", "-c", "1", "-b", "192.168.43.255"])
+        
+        # 2. Use 'nud reachable' - this is the "Golden Filter"
+        # It ONLY returns devices that are actively responding to the Hub
+        result = self._run_adb(["shell", "ip", "neighbor", "show", "nud", "reachable"])
+        
         devices = []
-
-        if not result.stdout:
-            return devices
-
-        for line in result.stdout.splitlines():
-            # Filter specifically for the robot's subnet
-            if "192.168.43." in line:
+        if result.stdout:
+            for line in result.stdout.splitlines():
                 parts = line.split()
-                if len(parts) > 0:
-                    ip = parts[0]
-                    # Since we use 'nud reachable', we classify these as ACTIVE
+                if not parts: continue
+                
+                ip = parts[0]
+                if "192.168.43." in ip and ip != "192.168.43.1":
+                    # In 'nud reachable' mode, we don't need to check the string
+                    # because the Hub only returns active ones.
                     devices.append((ip, "ACTIVE"))
-
+                    
         return devices
