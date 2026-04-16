@@ -88,14 +88,3 @@ class IdsGUI:
             print(f"[GUI ERROR] Failed to display message: {e}")
             # Ensure we don't leave the log widget locked if we crash
             self.monitor_log.config(state='disabled')
-
-
-
-
-# --- Application Entry Point ---
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = IdsGUI(root)
-
-    # MainLoop keeps the window open and processes the .after() queue
-    root.mainloop()
