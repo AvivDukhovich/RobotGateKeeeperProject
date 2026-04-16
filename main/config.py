@@ -7,7 +7,7 @@ between different hardware setups or security parameters.
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_2"  
+MY_IDENTITY = "ROBOT_1"  
 # ==========================================
 
 # Global Constants (Standard for FTC/Barnyard hardware)
