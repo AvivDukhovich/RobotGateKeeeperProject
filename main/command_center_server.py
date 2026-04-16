@@ -54,23 +54,25 @@ class CommandCenterServer:
         except Exception as e:
             print(f"[CLIENT HANDLER ERROR] from {addr}: {e}")
 
-    def _process_message(self, decrypted_data, sender_ip): # <--- ADD sender_ip HERE
-        """Processes the decrypted string and triggers alerts/UI"""
+    def _process_message(self, decrypted_data, sender_ip):
         try:
-            # Splits "ROBOT_1 | CONNECTED: ..."
-            robot_id, content = decrypted_data.split(" | ", 1)
-            
-            # 1. Update GUI via callback
-            if self.gui_callback:
-                self.gui_callback(robot_id, content)
+            # If decrypted_data is "ROBOT_2 | CONNECTED: 192.168.43.7"
+            if " | " in decrypted_data:
+                robot_id, content = decrypted_data.split(" | ", 1)
+            else:
+                robot_id = "UNKNOWN"
+                content = decrypted_data
 
-            # 2. Trigger Phone Notification (The "ntfy" part)
-            if "UNAUTHORIZED" in content or "CONNECTED" in content:
-                print(f"[NOTIFY] Sending ntfy alert for {robot_id}...", flush=True)
-                self.notifier.send_alert(f"Security Alert: {robot_id}", content)
-                
-            # Log to console for verification
-            print(f"[LOG] [{robot_id} @ {sender_ip}] {content}", flush=True)
+            # 1. Update GUI
+            if self.gui_callback:
+                self.gui_callback(robot_id, content) # This fixes the "No message provided"
+
+            # 2. LOG TO FILE (The missing piece!)
+            # You need to explicitly call your logger here
+            self.logger.log_event(f"[{robot_id}] {content}")
+
+            # 3. SAVE TO DATABASE
+            self.db.insert_alert(robot_id, content, sender_ip)
 
         except Exception as e:
-            print(f"[ERROR] Logic failure in _process_message: {e}")
+            print(f"[ERROR] Server failed to process/log: {e}")
