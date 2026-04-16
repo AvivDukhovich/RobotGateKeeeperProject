@@ -48,35 +48,43 @@ class CommandCenterServer:
             with client_socket:
                 data = client_socket.recv(4096)
                 if data:
-                    print(f"[DEBUG] Raw data received from {addr}: {data}") # <--- ADD THIS
                     message = self.sec.decrypt_message(data)
-                    print(f"[DEBUG] Decrypted: {message}") # <--- AND THIS
                     self._process_message(message, addr[0])
         except Exception as e:
             print(f"[CLIENT ERROR]: {e}")
 
     def _process_message(self, decrypted_data, sender_ip):
         try:
-            # 1. Parse
+            # 1. Parse incoming data
             if " | " in decrypted_data:
                 robot_id, content = decrypted_data.split(" | ", 1)
             else:
                 robot_id = "REMOTE"
                 content = decrypted_data
 
-            # 2. LOG IMMEDIATELY (This fixes your empty logs)
-            if self.logger:
-                self.logger.log_event(f"[{robot_id}] {content}")
-            
-            if self.db:
-                self.db.insert_alert(robot_id, content, sender_ip)
-
-            # 3. UPDATE GUI via after() to be thread-safe
+            # 2. UPDATE GUI (Thread-safe injection)
             if self.gui_callback:
-                # We use the GUI's root to schedule the update
-                # Assuming your gui_callback is bound to gui.update_status
-                # We need to make sure update_status is called on the main thread
                 self.gui_callback.__self__.root.after(0, lambda: self.gui_callback(robot_id, content))
+
+            # 3. PHONE NOTIFICATION (ntfy)
+            # We trigger this for any "UNAUTHORIZED" or "CONNECTED" events
+            if self.notifier:
+                try:
+                    # You can customize which messages trigger a buzz on your phone
+                    if "UNAUTHORIZED" in content or "CONNECTED" in content:
+                        title = f"Security Alert: {robot_id}"
+                        self.notifier.send_alert(title, content)
+                except Exception as ntfy_e:
+                    print(f"[!] Notification failed: {ntfy_e}")
+
+            # 4. LOG TO FILE
+            if self.logger:
+                self.logger.log(f"[{robot_id}] {content}")
+
+            # 5. SAVE TO DATABASE
+            if self.db:
+                db_event_str = f"[{robot_id}] {content}"
+                self.db.log_event(sender_ip, db_event_str)
 
         except Exception as e:
             print(f"[SERVER ERROR] Process failed: {e}")

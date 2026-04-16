@@ -11,6 +11,7 @@ class IDSEngine:
         self.mode = mode
         self.sec = SecureSocket(key=SECRET_KEY)
         self.known_devices = set()
+        self.running = True
 
     def start_monitoring(self):
         if self.monitor.connect_to_hub():
@@ -23,7 +24,7 @@ class IDSEngine:
         # We'll use a dictionary to track currently active IPs
         last_active_devices = set() 
 
-        while True:
+        while self.running:
             try:
                 # 1. Get current active devices from the Hub
                 current_devices = self.monitor.get_connected_devices()
@@ -68,3 +69,9 @@ class IDSEngine:
                 print(f"[SUCCESS] Alert sent: {message}")
         except Exception as e:
             print(f"[ENGINE ERROR] Connection failed: {e}")
+
+
+    def stop(self):
+            """Stops the background polling loop."""
+            print(f"[*] Stopping IDS Engine loop...")
+            self.running = False

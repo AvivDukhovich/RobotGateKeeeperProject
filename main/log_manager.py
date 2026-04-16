@@ -30,7 +30,6 @@ class LogManager:
     def log(self, message):
         """
         Records a timestamped message to the log file and prints it to the console.
-
         Args:
             message (str): The event description or alert to be recorded.
         """
