@@ -49,7 +49,7 @@ class IdsGUI:
         # Start the listener thread so the UI remains responsive while waiting for data
         self.start_network_thread()
 
-    def update_status(self, robot_id, text): # <--- Added robot_id here
+    def update_status(self, robot_id="SYSTEM", text="No message provided"): # <--- Added robot_id here
         """
         Thread-safe method to update the text display with new alerts.
         Now accepts robot_id to match the server's process_message call.
