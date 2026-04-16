@@ -48,31 +48,35 @@ class CommandCenterServer:
             with client_socket:
                 data = client_socket.recv(4096)
                 if data:
+                    print(f"[DEBUG] Raw data received from {addr}: {data}") # <--- ADD THIS
                     message = self.sec.decrypt_message(data)
-                    # We pass message AND the IP address (addr[0])
+                    print(f"[DEBUG] Decrypted: {message}") # <--- AND THIS
                     self._process_message(message, addr[0])
         except Exception as e:
-            print(f"[CLIENT HANDLER ERROR] from {addr}: {e}")
+            print(f"[CLIENT ERROR]: {e}")
 
     def _process_message(self, decrypted_data, sender_ip):
         try:
-            # If decrypted_data is "ROBOT_2 | CONNECTED: 192.168.43.7"
+            # 1. Parse
             if " | " in decrypted_data:
                 robot_id, content = decrypted_data.split(" | ", 1)
             else:
-                robot_id = "UNKNOWN"
+                robot_id = "REMOTE"
                 content = decrypted_data
 
-            # 1. Update GUI
+            # 2. LOG IMMEDIATELY (This fixes your empty logs)
+            if self.logger:
+                self.logger.log_event(f"[{robot_id}] {content}")
+            
+            if self.db:
+                self.db.insert_alert(robot_id, content, sender_ip)
+
+            # 3. UPDATE GUI via after() to be thread-safe
             if self.gui_callback:
-                self.gui_callback(robot_id, content) # This fixes the "No message provided"
-
-            # 2. LOG TO FILE (The missing piece!)
-            # You need to explicitly call your logger here
-            self.logger.log_event(f"[{robot_id}] {content}")
-
-            # 3. SAVE TO DATABASE
-            self.db.insert_alert(robot_id, content, sender_ip)
+                # We use the GUI's root to schedule the update
+                # Assuming your gui_callback is bound to gui.update_status
+                # We need to make sure update_status is called on the main thread
+                self.gui_callback.__self__.root.after(0, lambda: self.gui_callback(robot_id, content))
 
         except Exception as e:
-            print(f"[ERROR] Server failed to process/log: {e}")
+            print(f"[SERVER ERROR] Process failed: {e}")

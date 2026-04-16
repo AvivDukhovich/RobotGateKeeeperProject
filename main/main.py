@@ -41,6 +41,7 @@ def main():
     # --- MASTER vs SECONDARY LOGIC ---
     if ROBOT_ID == "ROBOT_1":
         print("[*] Starting Master Command Center Server...")
+        # Pass the gui.update_status function
         server = CommandCenterServer(db, logger, notifier, gui_callback=gui.update_status)
         server.start()
     else:

@@ -40,6 +40,7 @@ class LogManager:
         # Append the message to the file with UTF-8 encoding to support emojis or special chars
         with open(self.filename, "a", encoding="utf-8") as f:
             f.write(f"[{timestamp}] {message}\n")
+            f.flush()
 
         # Echo the log to the terminal for real-time monitoring by the operator
         print(f"[LOG] {message}")

@@ -46,81 +46,50 @@ class IdsGUI:
         self.monitor_log.tag_config(
             "UNAUTH", foreground="red", font=("Consolas", 10, "bold"))  # ALERT
 
-        # Start the listener thread so the UI remains responsive while waiting for data
-        self.start_network_thread()
+    
 
-    def update_status(self, robot_id="SYSTEM", text="No message provided"): # <--- Added robot_id here
+    def update_status(self, robot_id="SYSTEM", text=None): 
         """
-        Thread-safe method to update the text display with new alerts.
-        Now accepts robot_id to match the server's process_message call.
+        Thread-safe method to update the text display.
+        Handles both background timer calls and real server alerts.
         """
-        self.monitor_log.config(state='normal')  # Temporarily enable for writing
-        
-        timestamp = time.strftime('%H:%M:%S')
-        # Combined robot_id and text for the display
-        full_message = f"[{timestamp}] {robot_id}: {text}\n"
-
-        # Logical Tagging: Assign colors based on message content
-        tag = None
-        if "UNAUTHORIZED" in text:
-            tag = "UNAUTH"
-        elif "CONNECTED" in text or "ACTIVE" in text: # Added CONNECTED check
-            tag = "ACTIVE"
-        elif "STALE" in text or "DISCONNECTED" in text: # Added DISCONNECTED check
-            tag = "STALE"
-
-        # Insert at the end of the log and auto-scroll
-        self.monitor_log.insert(tk.END, full_message, tag)
-        self.monitor_log.see(tk.END)
-        self.monitor_log.config(state='disabled')  # Set back to read-only
-
-    def start_network_thread(self):
-        """
-        Spawns a background daemon thread to run the socket server.
-        Ensures the UI doesn't 'freeze' while the program waits for network data.
-        """
-        # Requirement: Concurrency (Multi-threading)
-        # daemon=True ensures the thread closes immediately when the GUI window is shut
-        net_thread = threading.Thread(target=self.run_server, daemon=True)
-        net_thread.start()
-
-    def run_server(self):
-        """
-        Hosts the local IPC (Inter-Process Communication) server.
-        Listens for, decrypts, and routes incoming security alerts to the UI.
-        """
-
-        # Initialize the same encryption engine used by the monitor
-        sec = SecureSocket(key=SECRET_KEY)
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        # Allow immediate re-binding of the port if the app restarts
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # 1. Handle the "NoneType" error immediately
+        if text is None:
+            # If text is None, this is likely a background heartbeat/timer call.
+            # We just return and do nothing so we don't spam the GUI or crash.
+            return 
 
         try:
-            # Bind to '0.0.0.0' to accept alerts from other laptops on the network
-            server.bind(('0.0.0.0', SERVER_PORT))
-            server.listen(5)
-            print(f"[*] Command Center Active. Listening for remote sensors...")
+            self.monitor_log.config(state='normal')
+            
+            timestamp = time.strftime('%H:%M:%S')
+            
+            # Use strip() safely on both inputs
+            clean_id = str(robot_id).strip()
+            clean_text = str(text).strip()
+            
+            full_message = f"[{timestamp}] {clean_id} | {clean_text}\n"
+
+            # 2. Logical Tagging (Safe check for upper())
+            tag = None
+            upper_text = clean_text.upper()
+            if "UNAUTHORIZED" in upper_text:
+                tag = "UNAUTH"
+            elif any(x in upper_text for x in ["CONNECTED", "ACTIVE"]):
+                tag = "ACTIVE"
+            elif any(x in upper_text for x in ["STALE", "DISCONNECTED", "LOST"]):
+                tag = "STALE"
+
+            self.monitor_log.insert(tk.END, full_message, tag)
+            self.monitor_log.see(tk.END)
+            self.monitor_log.config(state='disabled')
+            
         except Exception as e:
-            print(f"Bind Error: {e}")
-            return
+            print(f"[GUI ERROR] Failed to display message: {e}")
+            # Ensure we don't leave the log widget locked if we crash
+            self.monitor_log.config(state='disabled')
 
-        while True:
-            try:
-                # Accept incoming alert from the background monitor script
-                client, addr = server.accept()
-                data = client.recv(4096)
-                if data:
-                    # Decrypt the sensitive payload
-                    message = sec.decrypt_message(data)
 
-                    # THREAD SAFETY: Use .after() to schedule UI updates on the main thread.
-                    # Tkinter is not thread-safe; you cannot update the UI directly from run_server.
-                    self.root.after(0, self.update_status, message)
-                client.close()
-            except Exception as e:
-                print(f"Dashboard Server Loop Error: {e}")
 
 
 # --- Application Entry Point ---
