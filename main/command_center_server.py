@@ -21,7 +21,7 @@ class CommandCenterServer:
     def _run_listener(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server.bind(('127.0.0.1', 8989))
+            server.bind(('0.0.0.0', 8989))
             server.listen(5)
             server.settimeout(1.0) # <--- CRITICAL: Don't block forever
             

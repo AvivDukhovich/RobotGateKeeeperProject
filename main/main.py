@@ -7,51 +7,50 @@ from ids_gui import IdsGUI
 from database_manager import DatabaseManager
 from log_manager import LogManager
 from notification_manager import NotificationManager
-from config import LOG_FILE
+from config import LOG_FILE, ROBOT_ID
 
 def main():
-    # 1. Initialize Managers
+    # Initialize Managers
     db = DatabaseManager()
     logger = LogManager(LOG_FILE)
     notifier = NotificationManager("Farminator_protector")
 
-    # 4. Start the Local IDS Engine
-    engine = IDSEngine("usb") # You can change to "wifi" if needed
+    # Start the Local IDS Engine
+    engine = IDSEngine("usb") 
     engine.start_monitoring()
 
+    # Initialize the Tkinter Root and the GUI
+    root = tk.Tk()  
+    gui = IdsGUI(root)
 
-    # 2. Initialize the Tkinter Root and the GUI
-    root = tk.Tk()  # Create the actual window object
-    gui = IdsGUI(root) # Pass the root to your class
-
-    # 3. Start the Central Server
-    # Note: We use gui.update_status (or whatever your method name is)
-    server = CommandCenterServer(db, logger, notifier, gui_callback=gui.update_status)
-    server.start()
-
-    
-
-    # 5. Run GUI Loop
-    root.mainloop() # Using the standard Tkinter loop
-
+    # --- SHUTDOWN LOGIC (Defined inside main to access variables) ---
     def on_closing():
-        print("[*] Shutting down RobotGateKeeper...")
+        print(f"[*] Shutting down {ROBOT_ID}...")
         
-        # 1. Stop the background logic first
-        server.running = False  # Tells the listener loop to stop
-        engine.stop()           # (Assuming you have a stop method in IDSEngine)
+        # Only stop server if it was actually created
+        if ROBOT_ID == "ROBOT_1":
+            server.running = False  
         
-        # 2. Wait a tiny bit for threads to notice
+        engine.stop()           
         root.after(100, root.destroy)
 
-        # This handles clicking the "X" button on the window
-        root.protocol("WM_DELETE_WINDOW", on_closing)
-    
-    # This handles Ctrl+C in the terminal
+    # Register the shutdown handlers BEFORE starting loops
+    root.protocol("WM_DELETE_WINDOW", on_closing)
     signal.signal(signal.SIGINT, lambda s, f: on_closing())
 
+    # --- MASTER vs SECONDARY LOGIC ---
+    if ROBOT_ID == "ROBOT_1":
+        print("[*] Starting Master Command Center Server...")
+        server = CommandCenterServer(db, logger, notifier, gui_callback=gui.update_status)
+        server.start()
+    else:
+        print(f"[*] Secondary Node ({ROBOT_ID}) - Hiding GUI and skipping Server.")
+        # HIDE THE WINDOW but keep the process alive
+        root.withdraw() 
+
+    # --- RUN LOOP ---
     try:
-        root.mainloop()
+        root.mainloop() 
     except KeyboardInterrupt:
         on_closing()
 
