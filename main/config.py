@@ -12,20 +12,28 @@ MY_IDENTITY = "ROBOT_1"
 
 # Global Constants (Standard for FTC/Barnyard hardware)
 HUB_IP = "192.168.43.1"
-ADB_PORT = 5555          # Default port for wireless ADB communication
+ADB_PORT = 5555
 SERVER_PORT = 8989
 SECRET_KEY = b'yx0k4DLySC4S0MHfAUVPQzNw3cQBspQ9R8mkZUSh7oQ='
 LOG_FILE = "security_log.txt"
 
+# Network Permissions
+# Add the IPs of all "friendly" devices (Hub, PCs, Phones, Driver Station)
+ALLOWED_IPS = {
+    "192.168.43.1",    # The Control Hub
+    "192.168.11.58",   # PC #1 (Master)
+    "192.168.9.35",    # PC #2 
+    "127.0.0.1"        # Localhost
+}
+
 # The WiFi 2 IP of PC1 (Command Center)
-# Double-check this via 'ipconfig' if you lose connection!
 MASTER_NETWORK_IP = "192.168.11.58" 
 
 # Configuration Mapping for Machine-Specific Paths
 ROBOT_CONFIGS = {
     "ROBOT_1": {
         "master": True,
-        "adb": r"C:\Users\PMW\Documents\Tracker\platform-tools\adb.exe"
+        "adb": r"C:\Users\PMW\Documents\Tracker\experiments\RobotGateKeeeperProject\platform-tools\adb.exe"
     },
     "ROBOT_2": {
         "master": False,
