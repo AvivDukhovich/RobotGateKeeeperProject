@@ -7,7 +7,7 @@ between different hardware setups or security parameters.
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_1"  
+MY_IDENTITY = "ROBOT_2"  
 # ==========================================
 
 # Global Constants (Standard for FTC/Barnyard hardware)
@@ -21,13 +21,13 @@ LOG_FILE = "security_log.txt"
 # Add the IPs of all "friendly" devices (Hub, PCs, Phones, Driver Station)
 ALLOWED_IPS = {
     "192.168.43.1",    # The Control Hub
-    "192.168.11.58",   # PC #1 (Master)
-    "192.168.9.35",    # PC #2 
+    "192.168.11.58",   # PC #2
+    "192.168.9.35",    # PC #1 
     "127.0.0.1"        # Localhost
 }
 
 # The WiFi 2 IP of PC1 (Command Center)
-MASTER_NETWORK_IP = "192.168.11.58" 
+MASTER_NETWORK_IP = "192.168.9.35" 
 
 # Configuration Mapping for Machine-Specific Paths
 ROBOT_CONFIGS = {
