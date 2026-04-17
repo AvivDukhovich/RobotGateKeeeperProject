@@ -21,13 +21,13 @@ LOG_FILE = "security_log.txt"
 # Add the IPs of all "friendly" devices (Hub, PCs, Phones, Driver Station)
 ALLOWED_IPS = {
     "192.168.43.1",    # The Control Hub
-    "192.168.11.58",   # PC #2
-    "192.168.9.35",    # PC #1 
+    "192.168.11.105",   # PC #2
+    "192.168.11.226",    # PC #1
     "127.0.0.1"        # Localhost
 }
 
 # The WiFi 2 IP of PC1 (Command Center)
-MASTER_NETWORK_IP = "192.168.9.35" 
+MASTER_NETWORK_IP = "192.168.11.226"
 
 # Configuration Mapping for Machine-Specific Paths
 ROBOT_CONFIGS = {
