@@ -15,6 +15,7 @@ from log_manager import LogManager
 from notification_manager import NotificationManager
 from config import LOG_FILE, ROBOT_ID
 
+
 def main():
     # --- 1. Initialize Managers ---
     db = DatabaseManager()
@@ -22,22 +23,22 @@ def main():
     notifier = NotificationManager("Farminator_protector")
 
     # --- 2. Start Local IDS Engine ---
-    engine = IDSEngine("usb") 
+    engine = IDSEngine("usb")
     engine.start_monitoring()
 
     # --- 3. GUI Setup ---
-    root = tk.Tk()  
+    root = tk.Tk()
     gui = IdsGUI(root)
 
     # --- 4. Shutdown Logic ---
     def on_closing():
         print(f"[*] Shutting down {ROBOT_ID}...")
-        
+
         # Only stop server if it was actually created (Master only)
         if ROBOT_ID == "ROBOT_1":
-            server.running = False  
-        
-        engine.stop()           
+            server.running = False
+
+        engine.stop()
         root.after(100, root.destroy)
 
     # Register shutdown handlers
@@ -45,21 +46,28 @@ def main():
     signal.signal(signal.SIGINT, lambda s, f: on_closing())
 
     # --- 5. Master vs Secondary Logic ---
+    # --- 5. Master vs Secondary Logic ---
     if ROBOT_ID == "ROBOT_1":
         print("[*] Starting Master Command Center Server...")
-        # Server handles data routing to GUI, Logs, DB, and ntfy
-        server = CommandCenterServer(db, logger, notifier, gui_callback=gui.update_status)
-        server.start()
-    else:
-        print(f"[*] Secondary Node ({ROBOT_ID}) - Hiding GUI and skipping Server.")
-        # Secondary nodes run the engine in stealth mode
-        root.withdraw() 
 
-    # --- 6. Main Loop ---
+        # CHANGE: Pass the 'gui' object directly, not a callback.
+        # The order must match: (gui, db, logger, notifier)
+        server = CommandCenterServer(gui, db, logger, notifier)
+        server.start()
+
+        # Add a safe reference to the server for shutdown logic
+        server_instance = server
+    else:
+        print(
+            f"[*] Secondary Node ({ROBOT_ID}) - Hiding GUI and skipping Server.")
+        root.withdraw()
+        server_instance = None  # No server on secondary nodes
+        # --- 6. Main Loop ---
     try:
-        root.mainloop() 
+        root.mainloop()
     except KeyboardInterrupt:
         on_closing()
+
 
 if __name__ == "__main__":
     main()

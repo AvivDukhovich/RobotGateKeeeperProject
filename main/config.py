@@ -7,7 +7,7 @@ between different hardware setups or security parameters.
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_1"  
+MY_IDENTITY = "ROBOT_1"
 # ==========================================
 
 # Global Constants (Standard for FTC/Barnyard hardware)
@@ -33,7 +33,7 @@ MASTER_NETWORK_IP = "192.168.11.226"
 ROBOT_CONFIGS = {
     "ROBOT_1": {
         "master": True,
-        "adb": r"C:\Users\PMW\Documents\Tracker\experiments\RobotGateKeeeperProject\platform-tools\adb.exe"
+        "adb": r"D:\AACoding\school\scapyShit\RobotGateKeeeperProject\platform-tools\adb.exe"
     },
     "ROBOT_2": {
         "master": False,
