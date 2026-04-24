@@ -47,12 +47,22 @@ class CommandCenterServer:
 
     def _handle_client(self, client_sock, addr):
         sender_ip = addr[0]
-        secure_conn = SecureSocket(client_sock, SECRET_KEY)
 
         try:
-            decrypted_data = secure_conn.receive_encrypted()
-            if decrypted_data:
+            # 1. Receive the raw encrypted bytes from the network
+            # 1024 bytes is plenty for our small status strings
+            encrypted_data = client_sock.recv(1024)
+
+            if encrypted_data:
+                # 2. Initialize your encryption tool with the key
+                crypto = SecureSocket(key=SECRET_KEY)
+
+                # 3. Decrypt the bytes into a string
+                decrypted_data = crypto.decrypt_message(encrypted_data)
+
+                # 4. Process as usual
                 self._process_message(decrypted_data, sender_ip)
+
         except Exception as e:
             print(f"[SERVER ERROR] Failed to handle client {sender_ip}: {e}")
         finally:
@@ -91,14 +101,18 @@ class CommandCenterServer:
         return "ACTIVE"
 
     def _handle_security_event(self, robot_id, content, ip, status):
-        # Notify GUI (Main Monitor)
+        # 1. Update GUI (Live Monitor)
         self.gui.add_to_monitor(robot_id, content, status)
 
-        # Persistent Storage
-        self.db.save_event(robot_id, content, ip)
-        self.logger.log_event(f"{robot_id}@{ip}: {content}")
+        # 2. Update Database (Matches your DatabaseManager.log_event)
+        full_description = f"[{robot_id}] {content}"
+        self.db.log_event(ip, full_description)
 
-        # Urgent Alerts
+        # 3. Update Text Logs (FIX: Changed from log_event to log)
+        # Matches your LogManager.log(message)
+        self.logger.log(f"{robot_id}@{ip}: {content}")
+
+        # 4. Notify
         if status == "CRITICAL":
             self.notifier.send_push(f"SECURITY BREACH: {robot_id} at {ip}")
 

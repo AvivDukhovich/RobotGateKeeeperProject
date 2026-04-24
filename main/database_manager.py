@@ -62,3 +62,17 @@ class DatabaseManager:
 
         conn.commit()
         conn.close()
+
+
+def query_logs(self, limit=20):
+    """Retrieves the most recent events for the GUI."""
+    conn = sqlite3.connect(self.db_name)
+    cursor = conn.cursor()
+
+    # We sort by id DESC to get the newest entries at the top
+    cursor.execute(
+        "SELECT * FROM network_events ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+
+    conn.close()
+    return rows
