@@ -17,48 +17,62 @@ from notification_manager import NotificationManager
 from config import LOG_FILE, ROBOT_ID, CONNECTION_MODE
 
 def main():
-    # --- 1. Initialize Managers ---
-    db = DatabaseManager()
-    logger = LogManager(LOG_FILE)
-    notifier = NotificationManager("Farminator_protector")
-
-    # --- 2. GUI Setup ---
-    # Initialize the GUI first so the server has a valid object to talk to
-    root = tk.Tk()
-    gui = IdsGUI(root)
-
-    # Variables for shutdown scope
+    # --- 1. Master-Only Initialization ---
     server = None
+    gui = None
+    root = None
+
+    if ROBOT_ID == "ROBOT_1":
+        # Only ROBOT_1 needs the DB, Logger, and GUI components
+        db = DatabaseManager()
+        logger = LogManager(LOG_FILE)
+        notifier = NotificationManager("Farminator_protector")
+        
+        root = tk.Tk()
+        gui = IdsGUI(root)
+        
+        print("[*] Starting Master Command Center Server...")
+        server = CommandCenterServer(gui, db, logger, notifier)
+        gui.set_server_reference(server) # Link server to GUI for history fetching
+        server.start()
+        time.sleep(1)
+    else:
+        # ROBOT_2+ (Sensor Mode) doesn't need a GUI or local DB
+        print(f"[*] Initializing {ROBOT_ID} in SENSOR MODE (Headless)...")
+        notifier = None # Or initialize if you want PC 2 to send its own push alerts
+
+    # --- 2. Initialize IDS Engine ---
+    # The engine is common to both, but ROBOT_2 will send data to ROBOT_1's IP
     engine = IDSEngine(CONNECTION_MODE)
 
     # --- 3. Shutdown Logic ---
     def on_closing():
-        nonlocal server
         print(f"\n[*] Shutting down {ROBOT_ID}...")
+        engine.stop()
         if server:
             server.running = False
-        engine.stop()
-        root.destroy()
+        if root:
+            root.destroy()
+        exit(0)
 
-    root.protocol("WM_DELETE_WINDOW", on_closing)
+    # Handle OS signals (Ctrl+C)
     signal.signal(signal.SIGINT, lambda s, f: on_closing())
 
-    # --- 4. Master vs Secondary Logic ---
-    if ROBOT_ID == "ROBOT_1":
-        print("[*] Starting Master Command Center Server...")
-        server = CommandCenterServer(gui, db, logger, notifier)
-        server.start() 
-        time.sleep(1) 
-    else:
-        root.withdraw()
-
-    # --- 5. Start Local IDS Engine ---
-    # Wrap this in a thread so the GUI mainloop can actually start!
+    # --- 4. Start Local IDS Engine ---
+    # We run this in a thread so it doesn't block the GUI on Master
+    # or the script execution on Sensor nodes
     threading.Thread(target=engine.start_monitoring, daemon=True).start()
 
-    # --- 6. Main Loop ---
-    print(f"[*] {ROBOT_ID} System Ready. GUI Launching...")
-    root.mainloop()
+    # --- 5. Execution Loop ---
+    if ROBOT_ID == "ROBOT_1":
+        print(f"[*] {ROBOT_ID} Master System Ready. GUI Launching...")
+        root.protocol("WM_DELETE_WINDOW", on_closing)
+        root.mainloop()
+    else:
+        print(f"[*] {ROBOT_ID} Sensor Node Active. Monitoring hardware...")
+        # Keep the script alive since there is no GUI loop
+        while True:
+            time.sleep(1)
 
 if __name__ == "__main__":
     main()

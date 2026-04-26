@@ -25,25 +25,8 @@ class NetworkMonitor:
         self.mode = mode
         self.hub_address = f"{HUB_IP}:{ADB_PORT}"
 
-    def _run_adb(self, args):
-        """
-        Internal wrapper for subprocess to execute ADB commands.
-        
-        Args:
-            args (list): The list of ADB arguments (e.g., ['shell', 'ls']).
-            
-        Returns:
-            CompletedProcess: The result of the command execution.
-        """
-        cmd = [ADB_PATH]
-        # In Wi-Fi mode, we must target a specific serial/IP via the -s flag
-        if self.mode == "wifi":
-            cmd += ["-s", self.hub_address]
-        
-        try:
-            return subprocess.run(cmd + args, capture_output=True, text=True, timeout=5)
-        except subprocess.TimeoutExpired:
-            return subprocess.CompletedProcess(args, 1, "", "Timeout")
+        self.serial = "cafe98eae8910ac4"
+
 
     def connect_to_hub(self):
         """
@@ -61,38 +44,61 @@ class NetworkMonitor:
             lines = result.stdout.strip().splitlines()
             return any("device" in l and "List" not in l for l in lines)
 
+    def _run_adb(self, args):
+        """
+        Modified helper to ensure we target the specific USB serial.
+        Original: ['shell', 'ip', ...]
+        New: ['-s', 'cafe98eae8910ac4', 'shell', 'ip', ...]
+        """
+        import subprocess
+        full_cmd = ["adb", "-s", self.serial] + args
+        
+        # Use a timeout so the GUI doesn't hang if the USB is flaky
+        return subprocess.run(
+            full_cmd, 
+            capture_output=True, 
+            text=True, 
+            timeout=5
+        )
+
     def get_connected_devices(self):
         """
-        Queries the Hub for currently active network participants.
-        
-        Logic:
-        1. Broadcast Ping: Wakes up sleeping devices and forces an ARP refresh.
-        2. Neighbor Show: Inspects the Hub's ARP table for 'REACHABLE' states.
-        
-        Returns:
-            list: A list of tuples containing (IP_ADDRESS, "ACTIVE").
+        Queries the Hub for active participants with a non-blocking discovery step.
         """
-        # 1. Force discovery: Pings the subnet broadcast to elicit responses from peers
-        self._run_adb(["shell", "ping", "-c", "1", "-b", "192.168.43.255"])
+        try:
+            # 1. Non-Blocking Discovery
+            # We remove the timeout for this specific call or make it very short (1s)
+            # and we don't check the result. We just fire it and move on.
+            try:
+                self._run_adb_quick(["shell", "ping", "-c", "1", "-b", "192.168.43.255"])
+            except:
+                pass # If broadcast ping is blocked, we don't want to crash
+
+            # 2. Query Neighbor Table (The important part)
+            # We give this a dedicated timeout and strict error checking
+            result = self._run_adb(["shell", "ip", "neighbor", "show", "nud", "reachable"])
         
-        # 2. Query Neighbor Table: 
-        # 'nud reachable' is used to filter out STALE, DELAY, or FAILED entries.
-        result = self._run_adb(["shell", "ip", "neighbor", "show", "nud", "reachable"])
-    
-        # NEW: Check if ADB actually succeeded
-        # If the cable is out, result.returncode will be non-zero
-        if result.returncode != 0:
-            raise ConnectionError("Control Hub is physically unreachable via ADB")
-        
-        devices = []
-        if result.stdout:
-            for line in result.stdout.splitlines():
-                parts = line.split()
-                if not parts: continue
-                
-                ip = parts[0]
-                # Filter to ensure we only care about devices on the Robot controller's subnet
-                if "192.168.43." in ip and ip != "192.168.43.1":
-                    devices.append((ip, "ACTIVE"))
+            if result.returncode != 0:
+                return None 
+            
+            devices = []
+            if result.stdout:
+                for line in result.stdout.splitlines():
+                    parts = line.split()
+                    if len(parts) < 1: continue
                     
-        return devices
+                    ip = parts[0]
+                    if "192.168.43." in ip and ip != "192.168.43.1":
+                        devices.append((ip, "ACTIVE"))
+                        
+            return devices
+
+        except Exception as e:
+            # This is likely where your 'ENGINE ERROR' was coming from
+            print(f"[DEBUG] Hub polling failed: {e}")
+            return None
+
+    def _run_adb_quick(self, args):
+        """A faster version of _run_adb that doesn't wait for a response."""
+        full_cmd = ["adb", "-s", self.serial] + args
+        return subprocess.run(full_cmd, capture_output=True, text=True, timeout=1.5)
