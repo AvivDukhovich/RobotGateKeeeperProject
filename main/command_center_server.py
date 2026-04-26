@@ -68,30 +68,44 @@ class CommandCenterServer:
         finally:
             client_sock.close()
 
-    def _process_message(self, data, ip):
-        """The core logic gate of the system."""
+    
+
+    def _process_message(self, decrypted_data, sender_ip):
         try:
-            # 1. Parsing Gate
-            robot_id, content = data.split(" | ", 1)
-            content_upper = content.strip().upper()
-        except ValueError:
-            return  # Drop malformed packets
+            parts = decrypted_data.split(" | ")
+            if len(parts) < 2: return
+                
+            robot_id = parts[0]
+            content = parts[1]
 
-        # 2. State Management (Update internal dictionary)
-        status = self._determine_status(content_upper)
-        self.active_nodes[robot_id] = {
-            "ip": ip,
-            "last_seen": time.time(),
-            "status": status
-        }
+            # --- 1. TRACKING LOGIC ---
+            current_status = "Online"
+            if "UNAUTHORIZED" in content:
+                current_status = "Alerting"
+            elif "Link Lost" in content:
+                current_status = "Offline"
 
-        # 3. Execution Branching
-        if "HEARTBEAT" in content_upper:
-            # Heartbeats only refresh the UI 'Network Hub' state
-            self.gui.refresh_network_hub(self.active_nodes)
-        else:
-            # Security Events (UNAUTHORIZED, CONNECTED, etc.)
-            self._handle_security_event(robot_id, content, ip, status)
+            # Store the data exactly how your GUI function wants it
+            self.active_nodes[robot_id] = {
+                "ip": sender_ip,
+                "last_seen": time.time(), # Sending raw Unix timestamp
+                "status": current_status
+            }
+
+            # Call YOUR specific GUI function
+            self.gui._update_node_list_ui(self.active_nodes)
+
+            # --- 2. MESSAGE ROUTING ---
+            if "CONNECTED" in content and "UNAUTHORIZED" not in content:
+                # ... (your existing handshake logic) ...
+                self.gui.add_to_monitor(robot_id, "CONNECTED TO MASTER", "ACTIVE")
+                
+            else:
+                status = "CRITICAL" if "UNAUTHORIZED" in content or "Link Lost" in content else "INFO"
+                self._handle_security_event(robot_id, content, sender_ip, status)
+
+        except Exception as e:
+            print(f"[SERVER ERROR] Message processing failed: {e}")
 
     def _determine_status(self, content):
         if "UNAUTHORIZED" in content:
@@ -100,21 +114,31 @@ class CommandCenterServer:
             return "STALE"
         return "ACTIVE"
 
-    def _handle_security_event(self, robot_id, content, ip, status):
-        # 1. Update GUI (Live Monitor)
+    def _handle_security_event(self, robot_id, content, sender_ip, status):
+        # 1. LOG CLEANUP: Use robot_id: content (Removes the @127.0.0.1)
+        display_msg = f"{robot_id}: {content}"
+        
+        # 2. Update GUI
         self.gui.add_to_monitor(robot_id, content, status)
 
-        # 2. Update Database (Matches your DatabaseManager.log_event)
-        full_description = f"[{robot_id}] {content}"
-        self.db.log_event(ip, full_description)
+        # 3. Update Database & Text Logs
+        # We use sender_ip here just to know which Robot reported it
+        self.db.log_event(sender_ip, display_msg)
+        self.logger.log(display_msg)
 
-        # 3. Update Text Logs (FIX: Changed from log_event to log)
-        # Matches your LogManager.log(message)
-        self.logger.log(f"{robot_id}@{ip}: {content}")
-
-        # 4. Notify
+        # 4. NOTIFY (THE FIX)
         if status == "CRITICAL":
-            self.notifier.send_push(f"SECURITY BREACH: {robot_id} at {ip}")
+            # 'content' looks like "CONNECTED: 192.168.43.7 (UNAUTHORIZED)"
+            # We need to extract that 192... address so your phone shows the RIGHT IP
+            import re
+            ip_match = re.search(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', content)
+            actual_intruder_ip = ip_match.group(0) if ip_match else "Unknown IP"
+
+            # This will now send the ACTUAL intruder IP to your phone, not 127.0.0.1
+            self.notifier.send_alert(
+                f"SECURITY BREACH: {robot_id}", 
+                f"Intruder Detected: {actual_intruder_ip}"
+            )
 
     def get_active_nodes(self):
         return self.active_nodes

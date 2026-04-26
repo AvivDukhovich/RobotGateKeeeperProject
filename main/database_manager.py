@@ -8,71 +8,48 @@ activities, including authorized logins and unauthorized intrusions.
 import sqlite3
 from datetime import datetime
 
-
 class DatabaseManager:
-    def __init__(self, db_name="network_events.db"):
-        """
-        Initializes the database connection and ensures the schema exists.
-
-        Args:
-            db_name (str): The filename of the SQLite database.
-        """
-        self.db_name = db_name
-        self._create_table()
+    def __init__(self, db_path="robot_gatekeeper.db"):
+        try:
+            # Ensure the attribute name is exactly 'self.conn'
+            self.conn = sqlite3.connect(db_path, check_same_thread=False)
+            self._create_table()
+            print("[DB] Connected to database.")
+        except Exception as e:
+            print(f"[DB ERROR] Initialization failed: {e}")
 
     def _create_table(self):
-        """
-        Initializes the database schema if it has not been created yet.
-        Defines the 'network_events' table structure.
-        """
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS security_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                ip TEXT,
+                description TEXT
+            )
+        ''')
+        self.conn.commit()
 
-        # The schema tracks unique IDs, IPs, the nature of the event, and the time.
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS network_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ip_address TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            timestamp TEXT NOT NULL
-        )
-        """)
+    def log_event(self, ip, description):
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("INSERT INTO security_events (ip, description) VALUES (?, ?)", (ip, description))
+            self.conn.commit()
+        except Exception as e:
+            print(f"[DB ERROR] Failed to log event: {e}")
 
-        conn.commit()
-        conn.close()
-
-    def log_event(self, ip_address, event_type):
-        """
-        Inserts a new security event record into the database.
-
-        Args:
-            ip_address (str): The IP address of the detected device.
-            event_type (str): Description of the event (e.g., 'UNAUTHORIZED (ACTIVE)').
-        """
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-
-        # Generate a standardized ISO-8601-like timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        cursor.execute("""
-        INSERT INTO network_events (ip_address, event_type, timestamp)
-        VALUES (?, ?, ?)
-        """, (ip_address, event_type, timestamp))
-
-        conn.commit()
-        conn.close()
-
-
-def query_logs(self, limit=20):
-    """Retrieves the most recent events for the GUI."""
-    conn = sqlite3.connect(self.db_name)
-    cursor = conn.cursor()
-
-    # We sort by id DESC to get the newest entries at the top
-    cursor.execute(
-        "SELECT * FROM network_events ORDER BY id DESC LIMIT ?", (limit,))
-    rows = cursor.fetchall()
-
-    conn.close()
-    return rows
+    def query_logs(self, limit=20):
+        """Fetches latest events and sorts them so the newest is at the bottom."""
+        try:
+            cursor = self.conn.cursor()
+            # We still grab the latest entries using DESC
+            query = "SELECT timestamp, ip, description FROM security_events ORDER BY id DESC LIMIT ?"
+            cursor.execute(query, (limit,))
+            rows = cursor.fetchall()
+            
+            # Reversing the list: Newest goes from index [0] to the last index
+            return rows[::-1] 
+            
+        except Exception as e:
+            print(f"[DB ERROR] Query failed: {e}")
+            return []

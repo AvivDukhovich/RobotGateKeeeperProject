@@ -78,6 +78,11 @@ class NetworkMonitor:
         # 2. Query Neighbor Table: 
         # 'nud reachable' is used to filter out STALE, DELAY, or FAILED entries.
         result = self._run_adb(["shell", "ip", "neighbor", "show", "nud", "reachable"])
+    
+        # NEW: Check if ADB actually succeeded
+        # If the cable is out, result.returncode will be non-zero
+        if result.returncode != 0:
+            raise ConnectionError("Control Hub is physically unreachable via ADB")
         
         devices = []
         if result.stdout:
