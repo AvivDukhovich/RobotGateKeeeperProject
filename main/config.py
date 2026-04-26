@@ -9,7 +9,7 @@ import os
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_1" 
+MY_IDENTITY = "ROBOT_2" 
 # ==========================================
 
 # --- DYNAMIC PATH CALCULATION ---
@@ -30,7 +30,7 @@ LOG_FILE = "security_log.txt"
 # --- NETWORK PERMISSIONS ---
 ALLOWED_IPS = {
     "192.168.43.1",    # The Control Hub
-    "192.168.11.105",  # PC #2
+    "192.168.9.19",  # PC #2
     "192.168.11.226",  # PC #1 (Master)
     "127.0.0.1"        # Localhost
 }
