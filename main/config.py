@@ -31,7 +31,7 @@ LOG_FILE = "security_log.txt"
 ALLOWED_MACS = {
     "30:7b:c9:52:db:f4",    # The Control Hub
     "10-FF-E0-22-8E-F8", # Pc #1
-    "192.168.8.194",  # PC #2      # Localhost
+    "10-FF-E0-22-8E-E5",  # PC #2      # Localhost
 }
 
 # --- CONNECTION SETTINGS ---
