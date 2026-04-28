@@ -28,8 +28,9 @@ SECRET_KEY = b'yx0k4DLySC4S0MHfAUVPQzNw3cQBspQ9R8mkZUSh7oQ='
 LOG_FILE = "security_log.txt"
 
 # --- NETWORK PERMISSIONS ---
-ALLOWED_IPS = {
-    "192.168.43.1",    # The Control Hub
+ALLOWED_MACS = {
+    "30:7b:c9:52:db:f4",    # The Control Hub
+    "28:59:23:b6:9b:30",
     "192.168.9.19",  # PC #2
     "192.168.11.204",  # PC #1 (Master)
     "127.0.0.1"        # Localhost

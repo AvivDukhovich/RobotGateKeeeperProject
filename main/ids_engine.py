@@ -10,12 +10,13 @@ Detection Logic:
 - Authorization: Checks every new IP against the config.py whitelist.
 """
 
+import subprocess
 import time
 import socket
 import threading
 from network_monitor import NetworkMonitor
 from secure_socket import SecureSocket
-from config import SECRET_KEY, SERVER_PORT, COMMAND_CENTER_IP, ROBOT_ID, ALLOWED_IPS
+from config import LOCAL_ADB_PATH, SECRET_KEY, SERVER_PORT, COMMAND_CENTER_IP, ROBOT_ID, ALLOWED_MACS
 
 class IDSEngine:
     def __init__(self, mode="usb"):
@@ -30,6 +31,7 @@ class IDSEngine:
         self.sec = SecureSocket(key=SECRET_KEY)
         self.known_devices = set()
         self.running = True
+        self.adb_path = LOCAL_ADB_PATH
         
     def wait_for_hub(self):
         print(f"[*] {ROBOT_ID}: Searching for Control Hub...")
@@ -50,6 +52,18 @@ class IDSEngine:
         return False
             
         return False
+    
+    def _run_adb(self, args, timeout=5):
+        """Standard helper to run ADB commands using the local path."""
+        full_cmd = [self.adb_path] + args
+        try:
+            # We return the actual result object if it works
+            return subprocess.run(full_cmd, capture_output=True, text=True, timeout=timeout)
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            # Print the error so you know WHY it failed
+            label = "TIMEOUT" if isinstance(e, subprocess.TimeoutExpired) else "MISSING EXE"
+            print(f"[!] ADB {label}: {e}")
+            return None
 
     def _loop(self):
         last_active_devices = set() 
@@ -63,18 +77,19 @@ class IDSEngine:
                     time.sleep(5)
                     continue
 
-                current_ips = {ip for ip, status in current_devices}
+                current_macs = {device["mac"] for device in current_devices}
+                print(f"[*] Active MACs: {current_macs} | Known: {last_active_devices}", end='\r')
                 
-                for ip in current_ips:
+                for mac in current_macs:
                     # Intruder detection logic
-                    if ip not in last_active_devices and ip not in ALLOWED_IPS:
-                        print(f"[!] INTRUDER ALERT: {ip}")
-                        self._report(f"INTRUDER: {ip}")
-
-                last_active_devices = current_ips
+                    if mac.lower() not in [m.lower() for m in last_active_devices] and mac not in ALLOWED_MACS:
+                        print(f"[!] INTRUDER ALERT: {mac}")
+                        self._report(f"INTRUDER: {mac}", mac)
+                        # self._run_adb(["shell", "ip", "neighbor", "flush", mac])
+                        last_active_devices.add(mac)
                 
                 # SLEEP LONGER: 5 seconds gives the Hub's CPU a break
-                time.sleep(5) 
+                time.sleep(0.5) 
 
             except Exception as e:
                 print(f"[LOOP ERROR] {e}")
@@ -126,15 +141,15 @@ class IDSEngine:
         except Exception:
             return "Unknown-IP"
 
-    def _report(self, message):
+    def _report(self, message, mac=None):
         """Encrypted reporting with True IP detection."""
         # 1. Prepare the payload ONCE
         real_ip = self.get_local_ip()
-        payload = f"{ROBOT_ID} | IP:{real_ip} | {message}"
+        payload = f"{ROBOT_ID} | MAC: {mac} | {message}"
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(5.0) 
+                s.settimeout(1) 
                 
                 # Connect to the Master Command Center
                 s.connect((COMMAND_CENTER_IP, SERVER_PORT))
@@ -143,7 +158,7 @@ class IDSEngine:
                 encrypted_data = self.sec.encrypt_message(payload)
                 s.sendall(encrypted_data)
                 
-                print(f"[SUCCESS] Alert sent (via {real_ip}): {message}")
+                print(f"[SUCCESS] Alert sent to {mac} ({real_ip}): {message}")
                 
         except Exception as e:
             # We print the error but keep the engine running

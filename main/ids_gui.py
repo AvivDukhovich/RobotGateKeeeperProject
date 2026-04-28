@@ -100,10 +100,18 @@ class IdsGUI:
     def add_to_monitor(self, robot_id, text, status):
         self.root.after(0, self._update_monitor_ui, robot_id, text, status)
 
+    def create_node_button(self, text):
+        """Creates a styled button for the node list."""
+        btn = tk.Button(self.node_listbox, text=text, 
+                        bg="#000000", fg="white", font=("Consolas", 11), 
+                        borderwidth=0, highlightthickness=0, anchor="w")
+        self.node_listbox.insert(tk.END, text) # Add to Listbox
+        return btn
+
     def _update_node_list_ui(self, nodes):
         """Updates the sidebar with clean 'PC X: ID: ROBOT_X' names."""
         # Clear existing list items in the GUI container
-        self.clear_node_list_container() 
+        # self.clear_node_list_container() 
 
         for robot_id, info in nodes.items():
             # Get the clean display string you requested
@@ -119,8 +127,8 @@ class IdsGUI:
         if self.server and self.server.db:
             events = self.server.db.query_logs(limit=20)
             self.history_box.delete('1.0', tk.END)
-            for ts, ip, desc in events:
-                self.history_box.insert(tk.END, f"[{ts}] {ip} | {desc}\n")
+            for ts, mac, desc in events:
+                self.history_box.insert(tk.END, f"[{ts}] {mac} | {desc}\n")
 
     def _on_node_select(self, event):
         selection = self.node_listbox.curselection()

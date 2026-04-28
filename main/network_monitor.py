@@ -67,11 +67,20 @@ class NetworkMonitor:
         
         # 3. Process stdout safely
         devices = []
+        seen_macs = set()
         for line in result.stdout.splitlines():
             parts = line.split()
             if parts:
                 ip = parts[0]
-                if "192.168.43." in ip and ip != "192.168.43.1":
-                    devices.append((ip, "ACTIVE"))
+                mac = parts[4] if len(parts) > 4 else "UNKNOWN"
+                device = {
+                    "ip": ip,
+                    "mac": mac,
+                    "status": "ACTIVE"
+                }
+                # if "192.168.43." in ip and ip != "192.168.43.1":
+                if mac not in seen_macs:
+                    seen_macs.add(mac)
+                    devices.append(device)
         
         return devices
