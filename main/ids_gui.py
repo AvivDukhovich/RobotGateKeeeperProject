@@ -101,12 +101,20 @@ class IdsGUI:
         self.root.after(0, self._update_monitor_ui, robot_id, text, status)
 
     def _update_node_list_ui(self, nodes):
-        self.node_listbox.delete(0, tk.END)
-        for rid, data in nodes.items():
-            raw_time = data['last_seen']
-            ts = time.strftime('%H:%M:%S', time.localtime(raw_time)) if isinstance(raw_time, (int, float)) else raw_time
-            self.node_listbox.insert(tk.END, f" {rid} | IP: {data['ip']} | Last Seen: {ts} | Status: {data['status']}")
+        """Updates the sidebar with clean 'PC X: ID: ROBOT_X' names."""
+        # Clear existing list items in the GUI container
+        self.clear_node_list_container() 
 
+        for robot_id, info in nodes.items():
+            # Get the clean display string you requested
+            display_text = f"{info['display_name']}: ID: {info['id']}"
+            
+            # Create the button/label in the GUI
+            node_btn = self.create_node_button(display_text)
+            
+            # When clicked, show the DETAILED box with the IP and Timestamp
+            node_btn.bind("<Button-1>", lambda e, r_id=robot_id: self.show_node_details(r_id))
+            
     def _fetch_db_history(self):
         if self.server and self.server.db:
             events = self.server.db.query_logs(limit=20)

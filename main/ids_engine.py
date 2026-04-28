@@ -32,112 +32,124 @@ class IDSEngine:
         self.running = True
         
     def wait_for_hub(self):
-        """Infinite loop that blocks until the Control Hub is found."""
-        print(f"[*] {ROBOT_ID}: Waiting for Control Hub link...")
+        print(f"[*] {ROBOT_ID}: Searching for Control Hub...")
         while self.running:
-            try:
-                self.monitor.get_connected_devices()
-                handshake_msg = "Control Hub Connected"
-                print(f"[SUCCESS] {ROBOT_ID}: {handshake_msg}")
-                self._report(handshake_msg)
-                return True # Exit the wait loop and start monitoring
-            except Exception:
-                time.sleep(2)
+            devices = self.monitor.get_connected_devices()
+            
+            # devices is None if ADB failed or timed out
+            # devices is [] if ADB worked but no one is on the network
+            if devices is not None:
+                # We only print success ONCE and then exit the loop
+                print(f"[SUCCESS] {ROBOT_ID}: Control Hub Connected.")
+                
+                # Try to tell PC 1. If this fails, we catch it inside _report
+                self._report("Control Hub Connected")
+                return True 
+            
+            time.sleep(2)
+        return False
+            
         return False
 
     def _loop(self):
-        """Background loop: Only reports NEW unauthorized connections."""
-        # We still track last_active_devices so we know what is "New" vs "Already There"
         last_active_devices = set() 
-        
         while self.running:
             try:
                 current_devices = self.monitor.get_connected_devices()
                 
-                # Link Check: If ADB fails, crash the loop to trigger the 'Link Lost' logic
-                if current_devices is None: 
-                    raise ConnectionError("Lost contact with Control Hub")
+                if current_devices is None:
+                    # ADB timed out - wait 5 seconds and try again
+                    print("[!] Hardware busy. Pausing...")
+                    time.sleep(5)
+                    continue
 
                 current_ips = {ip for ip, status in current_devices}
                 
-                # --- 1. DISCONNECTS: IGNORED ---
-                # We no longer loop through last_active_devices to find missing IPs.
-                # This silences ALL "Device Lost" or "Disconnected" alerts.
-
-                # --- 2. NEW CONNECTIONS: FILTERED ---
                 for ip in current_ips:
-                    # ONLY report if it's a NEW sighting AND not on the whitelist
+                    # Intruder detection logic
                     if ip not in last_active_devices and ip not in ALLOWED_IPS:
-                        self._report(f"CONNECTED: {ip} (UNAUTHORIZED)")
                         print(f"[!] INTRUDER ALERT: {ip}")
+                        self._report(f"INTRUDER: {ip}")
 
-                # Update the state for the next scan
                 last_active_devices = current_ips
-                time.sleep(2)
+                
+                # SLEEP LONGER: 5 seconds gives the Hub's CPU a break
+                time.sleep(5) 
 
             except Exception as e:
-                # This still allows the PC to report when the USB cable is pulled
-                raise e
+                print(f"[LOOP ERROR] {e}")
+                raise e # Triggers 'Link Lost' logic in start_monitoring
 
     def start_monitoring(self):
-        """The Supervisor: Now documents disconnections in the DB/Logs."""
-        # Track if we were previously connected so we don't spam 'Link Lost' 
-        # while we are already searching.
+        """The Supervisor: Validates connection before entering the monitor loop."""
         was_connected = False 
 
         while self.running:
             try:
-                # 1. SEARCHING
+                # 1. SEARCHING - Now actually checking the return value
                 print(f"[*] {ROBOT_ID} IDS Engine: Searching for Hub...", end='\r')
-                self.monitor.get_connected_devices()
+                devices = self.monitor.get_connected_devices()
                 
+                # If it's None, ADB failed/timed out. Do NOT proceed.
+                if devices is None:
+                    time.sleep(2)
+                    continue
+
                 # 2. HANDSHAKE (Only on fresh connection)
-                msg = "Control Hub Connected"
-                print(f"\n[SUCCESS] {ROBOT_ID}: {msg}")
-                self._report(msg)
-                
-                was_connected = True # Set the flag
+                if not was_connected:
+                    msg = "Control Hub Connected"
+                    print(f"\n[SUCCESS] {ROBOT_ID}: {msg}")
+                    self._report(msg)
+                    was_connected = True
                 
                 # 3. MONITORING (Blocks here)
+                # Pass the initial 'devices' to _loop so it doesn't have to poll again immediately
                 self._loop() 
 
             except Exception as e:
                 # 4. DISCONNECT REPORTING
                 if was_connected:
-                    # This is the line that documents it in your Logs and DB!
                     disconnect_msg = "CRITICAL: Physical Link Lost (USB/ADB Disconnected)"
+                    print(f"\n[!] {ROBOT_ID}: {disconnect_msg}")
                     self._report(disconnect_msg)
-                    was_connected = False # Reset flag so we don't spam the server
+                    was_connected = False
                 
-                print(f"\n[!] {ROBOT_ID}: Link lost. Cleaning up and retrying...")
                 time.sleep(3)
 
+    def get_local_ip(self):
+        """Helper to grab the actual network IP, not 127.0.0.1"""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                # We use a public IP to 'probe' which interface is active
+                s.connect(("8.8.8.8", 80))
+                return s.getsockname()[0]
+        except Exception:
+            return "Unknown-IP"
+
     def _report(self, message):
-        """
-        Encrypts and sends a security alert to the Command Center Server.
-        
-        Args:
-            message (str): The status update to be transmitted.
-        """
+        """Encrypted reporting with True IP detection."""
+        # 1. Prepare the payload ONCE
+        real_ip = self.get_local_ip()
+        payload = f"{ROBOT_ID} | IP:{real_ip} | {message}"
+
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(2)
-                # Connect to the Master PC defined in config.py
+                s.settimeout(5.0) 
+                
+                # Connect to the Master Command Center
                 s.connect((COMMAND_CENTER_IP, SERVER_PORT))
                 
-                # Fetch target info for logging/verification
-                actual_target = s.getpeername()
-
-                # Package as "ROBOT_NAME | MESSAGE" for server parsing
-                payload = f"{ROBOT_ID} | {message}"
+                # 2. Send the ALREADY PREPARED payload (don't overwrite it!)
+                encrypted_data = self.sec.encrypt_message(payload)
+                s.sendall(encrypted_data)
                 
-                # Encrypt the payload before sending it over the wire
-                s.sendall(self.sec.encrypt_message(payload))
-                print(f"[SUCCESS] Alert sent: {message}")
+                print(f"[SUCCESS] Alert sent (via {real_ip}): {message}")
+                
         except Exception as e:
-            print(f"[ENGINE ERROR] Connection failed: {e}")
+            # We print the error but keep the engine running
+            print(f"[ENGINE ERROR] Reporting failed: {e}")
 
     def stop(self):
         """Gracefully terminates the background polling loop."""
-        print(f"[*] Stopping IDS Engine loop...")
+        print(f"[*] Stopping {ROBOT_ID} IDS Engine loop...")
         self.running = False

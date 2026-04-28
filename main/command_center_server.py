@@ -25,6 +25,7 @@ class CommandCenterServer:
         # Centralized State: Source of Truth for all robots
         # { "ROBOT_ID": {"ip": str, "last_seen": float, "status": str} }
         self.active_nodes = {}
+        self.connection_counter = 0
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('0.0.0.0', SERVER_PORT))
@@ -32,6 +33,16 @@ class CommandCenterServer:
 
         # Link the GUI to this server instance
         self.gui.set_server_reference(self)
+
+    def register_node(self, robot_id, data):
+        if robot_id not in self.active_nodes:
+            self.connection_counter += 1
+            self.active_nodes[robot_id] = {
+                "display_name": f"PC {self.connection_counter}",
+                "id": robot_id,
+                "ip": data['ip'],
+                "last_seen": time.strftime("%H:%M:%S")
+            }
 
     def start(self):
         """Starts the main server listener loop in a background thread."""
@@ -72,37 +83,58 @@ class CommandCenterServer:
 
     def _process_message(self, decrypted_data, sender_ip):
         try:
+            # 1. TRIPLE SPLIT: ROBOT_ID | IP:xxx | MESSAGE
             parts = decrypted_data.split(" | ")
-            if len(parts) < 2: return
-                
-            robot_id = parts[0]
-            content = parts[1]
+            
+            if len(parts) < 3:
+                robot_id = parts[0]
+                reported_ip = sender_ip
+                content = parts[1] if len(parts) > 1 else ""
+            else:
+                robot_id = parts[0]
+                reported_ip = parts[1].replace("IP:", "")
+                content = parts[2]
 
-            # --- 1. TRACKING LOGIC ---
+            # 2. ASSIGN / RETRIEVE PC NAME
+            if robot_id not in self.active_nodes:
+                self.connection_counter += 1
+                display_name = f"PC {self.connection_counter}"
+            else:
+                display_name = self.active_nodes[robot_id].get("display_name", "Unknown PC")
+
+            # 3. DETERMINE STATUS
+            # Standardizing to uppercase for foolproof matching
+            msg_upper = content.upper()
+            is_intruder = "UNAUTHORIZED" in msg_upper or "INTRUDER" in msg_upper
+            is_lost = "LINK LOST" in msg_upper or "OFFLINE" in msg_upper
+            
             current_status = "Online"
-            if "UNAUTHORIZED" in content:
+            if is_intruder:
                 current_status = "Alerting"
-            elif "Link Lost" in content:
+            elif is_lost:
                 current_status = "Offline"
 
-            # Store the data exactly how your GUI function wants it
+            # 4. UPDATE STATE (Do this BEFORE routing so handlers have the data)
             self.active_nodes[robot_id] = {
-                "ip": sender_ip,
-                "last_seen": time.time(), # Sending raw Unix timestamp
+                "display_name": display_name,
+                "id": robot_id,
+                "ip": reported_ip,
+                "last_seen": time.time(),
                 "status": current_status
             }
 
-            # Call YOUR specific GUI function
+            # Refresh GUI Sidebar
             self.gui._update_node_list_ui(self.active_nodes)
 
-            # --- 2. MESSAGE ROUTING ---
-            if "CONNECTED" in content and "UNAUTHORIZED" not in content:
-                # ... (your existing handshake logic) ...
-                self.gui.add_to_monitor(robot_id, "CONNECTED TO MASTER", "ACTIVE")
-                
+            # 5. MESSAGE ROUTING
+            # If it's a routine connection handshake
+            if "CONNECTED" in msg_upper and not is_intruder:
+                self.gui.add_to_monitor(display_name, "ESTABLISHED LINK", "ACTIVE")
+            
+            # If it's an actual event (Intruder, Link Lost, or general info)
             else:
-                status = "CRITICAL" if "UNAUTHORIZED" in content or "Link Lost" in content else "INFO"
-                self._handle_security_event(robot_id, content, sender_ip, status)
+                status_level = "CRITICAL" if (is_intruder or is_lost) else "INFO"
+                self._handle_security_event(robot_id, content, reported_ip, status_level)
 
         except Exception as e:
             print(f"[SERVER ERROR] Message processing failed: {e}")
@@ -115,8 +147,10 @@ class CommandCenterServer:
         return "ACTIVE"
 
     def _handle_security_event(self, robot_id, content, sender_ip, status):
-        # 1. LOG CLEANUP: Use robot_id: content (Removes the @127.0.0.1)
-        display_msg = f"{robot_id}: {content}"
+
+        # 1. LOG CLEANUP
+        name = self.active_nodes[robot_id]["display_name"]
+        display_msg = f"{name} ({robot_id}): {content}"    
         
         # 2. Update GUI
         self.gui.add_to_monitor(robot_id, content, status)

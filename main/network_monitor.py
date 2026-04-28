@@ -12,7 +12,7 @@ disconnected ARP entries.
 """
 
 import subprocess
-from config import ADB_PATH, HUB_IP, ADB_PORT
+from config import LOCAL_ADB_PATH, HUB_IP, ADB_PORT
 
 class NetworkMonitor:
     def __init__(self, mode="usb"):
@@ -24,8 +24,8 @@ class NetworkMonitor:
         """
         self.mode = mode
         self.hub_address = f"{HUB_IP}:{ADB_PORT}"
+        self.adb_path = LOCAL_ADB_PATH
 
-        self.serial = "cafe98eae8910ac4"
 
 
     def connect_to_hub(self):
@@ -44,61 +44,34 @@ class NetworkMonitor:
             lines = result.stdout.strip().splitlines()
             return any("device" in l and "List" not in l for l in lines)
 
-    def _run_adb(self, args):
-        """
-        Modified helper to ensure we target the specific USB serial.
-        Original: ['shell', 'ip', ...]
-        New: ['-s', 'cafe98eae8910ac4', 'shell', 'ip', ...]
-        """
-        import subprocess
-        full_cmd = ["adb", "-s", self.serial] + args
-        
-        # Use a timeout so the GUI doesn't hang if the USB is flaky
-        return subprocess.run(
-            full_cmd, 
-            capture_output=True, 
-            text=True, 
-            timeout=5
-        )
-
-    def get_connected_devices(self):
-        """
-        Queries the Hub for active participants with a non-blocking discovery step.
-        """
+    def _run_adb(self, args, timeout=5):
+        """Standard helper to run ADB commands using the local path."""
+        full_cmd = [self.adb_path] + args
         try:
-            # 1. Non-Blocking Discovery
-            # We remove the timeout for this specific call or make it very short (1s)
-            # and we don't check the result. We just fire it and move on.
-            try:
-                self._run_adb_quick(["shell", "ping", "-c", "1", "-b", "192.168.43.255"])
-            except:
-                pass # If broadcast ping is blocked, we don't want to crash
-
-            # 2. Query Neighbor Table (The important part)
-            # We give this a dedicated timeout and strict error checking
-            result = self._run_adb(["shell", "ip", "neighbor", "show", "nud", "reachable"])
-        
-            if result.returncode != 0:
-                return None 
-            
-            devices = []
-            if result.stdout:
-                for line in result.stdout.splitlines():
-                    parts = line.split()
-                    if len(parts) < 1: continue
-                    
-                    ip = parts[0]
-                    if "192.168.43." in ip and ip != "192.168.43.1":
-                        devices.append((ip, "ACTIVE"))
-                        
-            return devices
-
-        except Exception as e:
-            # This is likely where your 'ENGINE ERROR' was coming from
-            print(f"[DEBUG] Hub polling failed: {e}")
+            # We return the actual result object if it works
+            return subprocess.run(full_cmd, capture_output=True, text=True, timeout=timeout)
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            # Print the error so you know WHY it failed
+            label = "TIMEOUT" if isinstance(e, subprocess.TimeoutExpired) else "MISSING EXE"
+            print(f"[!] ADB {label}: {e}")
             return None
 
-    def _run_adb_quick(self, args):
-        """A faster version of _run_adb that doesn't wait for a response."""
-        full_cmd = ["adb", "-s", self.serial] + args
-        return subprocess.run(full_cmd, capture_output=True, text=True, timeout=1.5)
+    def get_connected_devices(self):
+        """Source of truth for the engine."""
+        # 1. Run the command
+        result = self._run_adb(["shell", "ip", "neighbor", "show", "nud", "reachable"])
+        
+        # 2. Handle the "None" case immediately
+        if result is None or result.returncode != 0:
+            return None
+        
+        # 3. Process stdout safely
+        devices = []
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if parts:
+                ip = parts[0]
+                if "192.168.43." in ip and ip != "192.168.43.1":
+                    devices.append((ip, "ACTIVE"))
+        
+        return devices
