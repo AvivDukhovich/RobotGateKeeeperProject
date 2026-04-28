@@ -30,10 +30,8 @@ LOG_FILE = "security_log.txt"
 # --- NETWORK PERMISSIONS ---
 ALLOWED_MACS = {
     "30:7b:c9:52:db:f4",    # The Control Hub
-    "28:59:23:b6:9b:30",
-    "192.168.9.19",  # PC #2
-    "192.168.11.204",  # PC #1 (Master)
-    "127.0.0.1"        # Localhost
+    "10-FF-E0-22-8E-F8", # Pc #1
+    "192.168.8.194",  # PC #2      # Localhost
 }
 
 # --- CONNECTION SETTINGS ---
@@ -42,7 +40,7 @@ CONNECTION_MODE = "usb"
 
 # The actual network IP of the Command Center (ROBOT_1)
 # Secondary robots will use this to find the Master over Wi-Fi.
-MASTER_NETWORK_IP = "192.168.11.204"
+MASTER_NETWORK_IP = "192.168.8.194"
 
 # --- SYSTEM LOGIC ---
 ROBOT_ID = MY_IDENTITY
