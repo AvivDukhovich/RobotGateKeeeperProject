@@ -6,7 +6,7 @@ activities, including authorized logins and unauthorized intrusions.
 """
 
 import sqlite3
-from datetime import datetime
+
 
 class DatabaseManager:
     def __init__(self, db_path="robot_gatekeeper.db"):
@@ -33,7 +33,8 @@ class DatabaseManager:
     def log_event(self, ip, description):
         try:
             cursor = self.conn.cursor()
-            cursor.execute("INSERT INTO security_events (ip, description) VALUES (?, ?)", (ip, description))
+            cursor.execute(
+                "INSERT INTO security_events (ip, description) VALUES (?, ?)", (ip, description))
             self.conn.commit()
         except Exception as e:
             print(f"[DB ERROR] Failed to log event: {e}")
@@ -46,10 +47,10 @@ class DatabaseManager:
             query = "SELECT timestamp, ip, description FROM security_events ORDER BY id DESC LIMIT ?"
             cursor.execute(query, (limit,))
             rows = cursor.fetchall()
-            
+
             # Reversing the list: Newest goes from index [0] to the last index
-            return rows[::-1] 
-            
+            return rows[::-1]
+
         except Exception as e:
             print(f"[DB ERROR] Query failed: {e}")
             return []

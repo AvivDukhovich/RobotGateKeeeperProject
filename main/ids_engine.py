@@ -18,11 +18,12 @@ from network_monitor import NetworkMonitor
 from secure_socket import SecureSocket
 from config import LOCAL_ADB_PATH, SECRET_KEY, SERVER_PORT, COMMAND_CENTER_IP, ROBOT_ID, ALLOWED_MACS
 
+
 class IDSEngine:
     def __init__(self, mode="usb"):
         """
         Initializes the monitoring engine.
-        
+
         Args:
             mode (str): The connection method to the Hub ('usb' or 'wifi').
         """
@@ -32,27 +33,27 @@ class IDSEngine:
         self.known_devices = set()
         self.running = True
         self.adb_path = LOCAL_ADB_PATH
-        
+
     def wait_for_hub(self):
         print(f"[*] {ROBOT_ID}: Searching for Control Hub...")
         while self.running:
             devices = self.monitor.get_connected_devices()
-            
+
             # devices is None if ADB failed or timed out
             # devices is [] if ADB worked but no one is on the network
             if devices is not None:
                 # We only print success ONCE and then exit the loop
                 print(f"[SUCCESS] {ROBOT_ID}: Control Hub Connected.")
-                
+
                 # Try to tell PC 1. If this fails, we catch it inside _report
                 self._report("Control Hub Connected")
-                return True 
-            
+                return True
+
             time.sleep(2)
         return False
-            
+
         return False
-    
+
     def _run_adb(self, args, timeout=5):
         """Standard helper to run ADB commands using the local path."""
         full_cmd = [self.adb_path] + args
@@ -61,16 +62,17 @@ class IDSEngine:
             return subprocess.run(full_cmd, capture_output=True, text=True, timeout=timeout)
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             # Print the error so you know WHY it failed
-            label = "TIMEOUT" if isinstance(e, subprocess.TimeoutExpired) else "MISSING EXE"
+            label = "TIMEOUT" if isinstance(
+                e, subprocess.TimeoutExpired) else "MISSING EXE"
             print(f"[!] ADB {label}: {e}")
             return None
 
     def _loop(self):
-        last_active_devices = set() 
+        last_active_devices = set()
         while self.running:
             try:
                 current_devices = self.monitor.get_connected_devices()
-                
+
                 if current_devices is None:
                     # ADB timed out - wait 5 seconds and try again
                     print("[!] Hardware busy. Pausing...")
@@ -78,8 +80,9 @@ class IDSEngine:
                     continue
 
                 current_macs = {device["mac"] for device in current_devices}
-                print(f"[*] Active MACs: {current_macs} | Known: {last_active_devices}", end='\r')
-                
+                print(
+                    f"[*] Active MACs: {current_macs} | Known: {last_active_devices}", end='\r')
+
                 for mac in current_macs:
                     # Intruder detection logic
                     if mac.lower() not in [m.lower() for m in last_active_devices] and mac not in ALLOWED_MACS:
@@ -87,24 +90,25 @@ class IDSEngine:
                         self._report(f"INTRUDER: {mac}", mac)
                         # self._run_adb(["shell", "ip", "neighbor", "flush", mac])
                         last_active_devices.add(mac)
-                
+
                 # SLEEP LONGER: 5 seconds gives the Hub's CPU a break
-                time.sleep(0.5) 
+                time.sleep(0.5)
 
             except Exception as e:
                 print(f"[LOOP ERROR] {e}")
-                raise e # Triggers 'Link Lost' logic in start_monitoring
+                raise e  # Triggers 'Link Lost' logic in start_monitoring
 
     def start_monitoring(self):
         """The Supervisor: Validates connection before entering the monitor loop."""
-        was_connected = False 
+        was_connected = False
 
         while self.running:
             try:
                 # 1. SEARCHING - Now actually checking the return value
-                print(f"[*] {ROBOT_ID} IDS Engine: Searching for Hub...", end='\r')
+                print(
+                    f"[*] {ROBOT_ID} IDS Engine: Searching for Hub...", end='\r')
                 devices = self.monitor.get_connected_devices()
-                
+
                 # If it's None, ADB failed/timed out. Do NOT proceed.
                 if devices is None:
                     time.sleep(2)
@@ -116,10 +120,10 @@ class IDSEngine:
                     print(f"\n[SUCCESS] {ROBOT_ID}: {msg}")
                     self._report(msg)
                     was_connected = True
-                
+
                 # 3. MONITORING (Blocks here)
                 # Pass the initial 'devices' to _loop so it doesn't have to poll again immediately
-                self._loop() 
+                self._loop()
 
             except Exception as e:
                 # 4. DISCONNECT REPORTING
@@ -128,7 +132,7 @@ class IDSEngine:
                     print(f"\n[!] {ROBOT_ID}: {disconnect_msg}")
                     self._report(disconnect_msg)
                     was_connected = False
-                
+
                 time.sleep(3)
 
     def get_local_ip(self):
@@ -149,17 +153,17 @@ class IDSEngine:
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(1) 
-                
+                s.settimeout(1)
+
                 # Connect to the Master Command Center
                 s.connect((COMMAND_CENTER_IP, SERVER_PORT))
-                
+
                 # 2. Send the ALREADY PREPARED payload (don't overwrite it!)
                 encrypted_data = self.sec.encrypt_message(payload)
                 s.sendall(encrypted_data)
-                
+
                 print(f"[SUCCESS] Alert sent to {mac} ({real_ip}): {message}")
-                
+
         except Exception as e:
             # We print the error but keep the engine running
             print(f"[ENGINE ERROR] Reporting failed: {e}")

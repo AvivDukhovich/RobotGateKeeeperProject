@@ -9,7 +9,7 @@ import os
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_1" 
+MY_IDENTITY = "ROBOT_1"
 # ==========================================
 
 # --- DYNAMIC PATH CALCULATION ---
@@ -30,9 +30,9 @@ LOG_FILE = "security_log.txt"
 # --- NETWORK PERMISSIONS ---
 ALLOWED_MACS = {
     "30:7b:c9:52:db:f4",    # The Control Hub
-    "10-FF-E0-22-8E-F8", # Pc #1
-    "10-FF-E0-22-8E-E5",  # PC #2      # Localhost
-    "00:13:ef:f4:2b:90" # Driver hub
+    "10-FF-E0-22-8E-F8",  # Pc #1
+    "10-FF-E0-22-8E-E5",  # PC #2
+    "00:13:ef:f4:2b:90"  # Driver hub
 }
 
 # --- CONNECTION SETTINGS ---
