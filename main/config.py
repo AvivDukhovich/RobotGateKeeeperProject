@@ -12,13 +12,15 @@ import os
 MY_IDENTITY = "ROBOT_2"
 # ==========================================
 
-# --- DYNAMIC PATH CALCULATION ---
-# Get the folder where config.py is (the 'main' folder)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Go up one level to the project root
-PROJECT_ROOT = os.path.dirname(BASE_DIR)
-# Path to ADB relative to this project's location
-LOCAL_ADB_PATH = os.path.join(PROJECT_ROOT, "platform-tools", "adb.exe")
+# # --- DYNAMIC PATH CALCULATION ---
+# # Get the folder where config.py is (the 'main' folder)
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# # Go up one level to the project root
+# PROJECT_ROOT = os.path.dirname(BASE_DIR)
+# # Path to ADB relative to this project's location
+# LOCAL_ADB_PATH = os.path.join(PROJECT_ROOT, "platform-tools", "adb.exe")
+
+LOCAL_ADB_PATH = "/usr/bin/adb"
 
 # --- GLOBAL CONSTANTS ---
 HUB_IP = "192.168.43.1"
@@ -42,7 +44,7 @@ CONNECTION_MODE = "usb"
 
 # The actual network IP of the Command Center (ROBOT_1)
 # Secondary robots will use this to find the Master over Wi-Fi.
-MASTER_NETWORK_IP = "192.168.8.194"
+MASTER_NETWORK_IP = "192.168.9.102"
 
 # --- SYSTEM LOGIC ---
 ROBOT_ID = MY_IDENTITY
