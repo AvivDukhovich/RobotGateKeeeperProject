@@ -9,7 +9,7 @@ import os
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_1"
+MY_IDENTITY = "ROBOT_2"
 # ==========================================
 
 # --- DYNAMIC PATH CALCULATION ---
@@ -32,7 +32,7 @@ ALLOWED_MACS = {
     "0c:cf:89:29:90:ac",    # The Control Hub
     "a8:b5:8e:12:1d:e5", #Control Hub 2
     "04:6c:59:99:d6:e4",  # Pc #1
-    "04:6c:59:99:d6:e4",  # PC #2
+    "04:6c:59:bb:46:71",  # PC #2
     "00:13:ef:f4:2b:90"  # Driver hub
 }
 
