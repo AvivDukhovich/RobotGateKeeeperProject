@@ -11,6 +11,8 @@ and mobile notifications via ntfy.sh.
 import socket
 import threading
 import time
+import re
+from datetime import datetime, timezone, timedelta
 from secure_socket import SecureSocket
 from config import SECRET_KEY, SERVER_PORT
 
@@ -34,14 +36,20 @@ class CommandCenterServer:
         # Link the GUI to this server instance
         self.gui.set_server_reference(self)
 
+    def _get_israel_time_str(self):
+        """Helper to get a perfectly formatted timestamp forced to Israel Time (UTC+3)"""
+        israel_tz = timezone(timedelta(hours=3))
+        return datetime.now(israel_tz).strftime("[%Y-%m-%d %H:%M:%S]")
+
     def register_node(self, robot_id, data):
         if robot_id not in self.active_nodes:
             self.connection_counter += 1
+            israel_time = timezone(timedelta(hours=3))
             self.active_nodes[robot_id] = {
                 "display_name": f"PC {self.connection_counter}",
                 "id": robot_id,
                 "ip": data['ip'],
-                "last_seen": time.strftime("%H:%M:%S")
+                "last_seen": datetime.now(israel_time).strftime("%H:%M:%S")
             }
 
     def start(self):
@@ -61,7 +69,6 @@ class CommandCenterServer:
 
         try:
             # 1. Receive the raw encrypted bytes from the network
-            # 1024 bytes is plenty for our small status strings
             encrypted_data = client_sock.recv(1024)
 
             if encrypted_data:
@@ -78,8 +85,6 @@ class CommandCenterServer:
             print(f"[SERVER ERROR] Failed to handle client {sender_ip}: {e}")
         finally:
             client_sock.close()
-
-    
 
     def _process_message(self, decrypted_data, sender_ip):
         try:
@@ -103,7 +108,6 @@ class CommandCenterServer:
                 display_name = self.active_nodes[robot_id].get("display_name", "Unknown PC")
 
             # 3. DETERMINE STATUS
-            # Standardizing to uppercase for foolproof matching
             msg_upper = content.upper()
             is_intruder = "UNAUTHORIZED" in msg_upper or "INTRUDER" in msg_upper
             is_lost = "LINK LOST" in msg_upper or "OFFLINE" in msg_upper
@@ -114,7 +118,7 @@ class CommandCenterServer:
             elif is_lost:
                 current_status = "Offline"
 
-            # 4. UPDATE STATE (Do this BEFORE routing so handlers have the data)
+            # 4. UPDATE STATE (Forced to current accurate epoch time)
             self.active_nodes[robot_id] = {
                 "display_name": display_name,
                 "id": robot_id,
@@ -127,11 +131,8 @@ class CommandCenterServer:
             self.gui._update_node_list_ui(self.active_nodes)
 
             # 5. MESSAGE ROUTING
-            # If it's a routine connection handshake
             if "CONNECTED" in msg_upper and not is_intruder:
                 self.gui.add_to_monitor(display_name, "ESTABLISHED LINK", "ACTIVE")
-            
-            # If it's an actual event (Intruder, Link Lost, or general info)
             else:
                 status_level = "CRITICAL" if (is_intruder or is_lost) else "INFO"
                 self._handle_security_event(robot_id, content, reported_ip, status_level)
@@ -147,31 +148,28 @@ class CommandCenterServer:
         return "ACTIVE"
 
     def _handle_security_event(self, robot_id, content, sender_ip, status):
+        # Generate the live Israel Timestamp
+        time_stamp = self._get_israel_time_str()
 
-        # 1. LOG CLEANUP
+        # 1. LOG CLEANUP (Prepend the precise Israel Time)
         name = self.active_nodes[robot_id]["display_name"]
-        display_msg = f"{name} ({robot_id}): {content}"    
+        display_msg = f"{time_stamp} {name} ({robot_id}): {content}"    
         
         # 2. Update GUI
         self.gui.add_to_monitor(robot_id, content, status)
 
-        # 3. Update Database & Text Logs
-        # We use sender_ip here just to know which Robot reported it
+        # 3. Update Database & Text Logs with explicit Israel Time
         self.db.log_event(sender_ip, display_msg)
         self.logger.log(display_msg)
 
-        # 4. NOTIFY (THE FIX)
+        # 4. NOTIFY
         if status == "CRITICAL":
-            # 'content' looks like "CONNECTED: 192.168.43.7 (UNAUTHORIZED)"
-            # We need to extract that 192... address so your phone shows the RIGHT IP
-            import re
             ip_match = re.search(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', content)
             actual_intruder_ip = ip_match.group(0) if ip_match else "Unknown IP"
 
-            # This will now send the ACTUAL intruder IP to your phone, not 127.0.0.1
             self.notifier.send_alert(
                 f"SECURITY BREACH: {robot_id}", 
-                f"Intruder Detected: {actual_intruder_ip}"
+                f"Time: {time_stamp} | Intruder: {actual_intruder_ip}"
             )
 
     def get_active_nodes(self):
