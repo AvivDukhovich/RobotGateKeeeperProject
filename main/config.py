@@ -9,7 +9,7 @@ import os
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_1"
+MY_IDENTITY = "ROBOT_2"
 # ==========================================
 
 # --- DYNAMIC PATH CALCULATION ---

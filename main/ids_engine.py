@@ -80,8 +80,8 @@ class IDSEngine:
                     continue
 
                 current_macs = {device["mac"] for device in current_devices}
-                print(
-                    f"[*] Active MACs: {current_macs} | Known: {last_active_devices}", end='\r')
+                # print(
+                #     f"[*] Active MACs: {current_macs} | Known: {last_active_devices}", end='\r')
 
                 for mac in current_macs:
                     # Intruder detection logic

@@ -4,6 +4,19 @@ This script orchestrates the IDS engine, the network server, and the GUI.
 It allows the system to operate as either a Master Command Center (ROBOT_1)
 or a Secondary Remote Sensor (ROBOT_2+) based on the config.
 """
+import sys
+import subprocess
+
+# --- SURGICAL DEMO FIX: FORCE ADB TIMEOUT EXTENSION & PORT FIX ---
+# This intercepts all background subprocess/ADB calls globally and boosts their timeout from 5 to 15 seconds,
+# preventing the hardware pipeline from locking up after sending alerts.
+original_run = subprocess.run
+def patch_subprocess_run(*args, **kwargs):
+    if 'timeout' in kwargs and kwargs['timeout'] == 5:
+        kwargs['timeout'] = 15  # Give the physical hub more breathing room
+    return original_run(*args, **kwargs)
+subprocess.run = patch_subprocess_run
+
 import signal
 import threading
 import tkinter as tk
@@ -42,7 +55,6 @@ def main():
         notifier = None # Or initialize if you want PC 2 to send its own push alerts
 
     # --- 2. Initialize IDS Engine ---
-    # The engine is common to both, but ROBOT_2 will send data to ROBOT_1's IP
     engine = IDSEngine(CONNECTION_MODE)
 
     # --- 3. Shutdown Logic ---
@@ -53,14 +65,13 @@ def main():
             server.running = False
         if root:
             root.destroy()
-        exit(0)
+        sys.exit(0)
 
     # Handle OS signals (Ctrl+C)
     signal.signal(signal.SIGINT, lambda s, f: on_closing())
 
     # --- 4. Start Local IDS Engine ---
-    # We run this in a thread so it doesn't block the GUI on Master
-    # or the script execution on Sensor nodes
+    # Running inside a dedicated thread so socket delays can't lock up execution
     threading.Thread(target=engine.start_monitoring, daemon=True).start()
 
     # --- 5. Execution Loop ---
