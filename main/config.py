@@ -9,7 +9,7 @@ import os
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_2"
+MY_IDENTITY = "ROBOT_1"
 # ==========================================
 
 # --- DYNAMIC PATH CALCULATION ---
@@ -33,7 +33,7 @@ LOG_FILE = "security_log.txt"
 ALLOWED_MACS = {
     "0c:cf:89:29:90:ac",    # The Control Hub
     "a8:b5:8e:12:1d:e5", #Control Hub 2
-    "04:6c:59:99:d6:e4",  # Pc #1
+    "10:ff:e0:22:8e:f8",  # Pc #1
     "10:ff:e0:22:8e:e5",  # PC #2
     "00:13:ef:f4:2b:90"  # Driver hub
 }
@@ -44,7 +44,7 @@ CONNECTION_MODE = "usb"
 
 # The actual network IP of the Command Center (ROBOT_1)
 # Secondary robots will use this to find the Master over Wi-Fi.
-MASTER_NETWORK_IP = "192.168.9.102"
+MASTER_NETWORK_IP = "192.168.11.48"
 
 # --- SYSTEM LOGIC ---
 ROBOT_ID = MY_IDENTITY
