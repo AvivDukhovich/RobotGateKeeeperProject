@@ -9,18 +9,18 @@ import os
 
 # ==========================================
 # THE ONLY LINE YOU CHANGE ON EACH PC:
-MY_IDENTITY = "ROBOT_1"
+MY_IDENTITY = "ROBOT_2"
 # ==========================================
 
-# # --- DYNAMIC PATH CALCULATION ---
-# # Get the folder where config.py is (the 'main' folder)
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# # Go up one level to the project root
-# PROJECT_ROOT = os.path.dirname(BASE_DIR)
-# # Path to ADB relative to this project's location
-# LOCAL_ADB_PATH = os.path.join(PROJECT_ROOT, "platform-tools", "adb.exe")
+# --- DYNAMIC PATH CALCULATION ---
+# Get the folder where config.py is (the 'main' folder)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Go up one level to the project root
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+# Path to ADB relative to this project's location
+LOCAL_ADB_PATH = os.path.join(PROJECT_ROOT, "platform-tools", "adb.exe")
 
-LOCAL_ADB_PATH = "/usr/bin/adb"
+# LOCAL_ADB_PATH = "/usr/bin/adb"
 
 # --- GLOBAL CONSTANTS ---
 HUB_IP = "192.168.43.1"
@@ -34,7 +34,7 @@ ALLOWED_MACS = {
     "0c:cf:89:29:90:ac",    # The Control Hub
     "a8:b5:8e:12:1d:e5", #Control Hub 2
     "04:6c:59:99:d6:e4",  # Pc #1
-    "04:6c:59:bb:46:71",  # PC #2
+    "10:ff:e0:22:8e:e5",  # PC #2
     "00:13:ef:f4:2b:90"  # Driver hub
 }
 
